@@ -1498,6 +1498,18 @@ fn disable_autostart() -> Result<(), String> {
         
         // Delete the registry value
         let result = RegDeleteValueW(
+            hkey,
+            PCWSTR::from_raw(value_name.as_ptr()),
+        );
+        
+        let _ = RegCloseKey(hkey);
+        
+        result.map_err(|e| format!("Failed to delete registry value: {:?}", e))?;
+        
+        log_to_file("Autostart disabled successfully");
+        Ok(())
+    }
+}
 
 #[tauri::command]
 fn get_windows_theme() -> Result<String, String> {
@@ -1559,47 +1571,6 @@ fn get_windows_theme() -> Result<String, String> {
             // Default to dark if we can't read the value
             Ok("dark".to_string())
         }
-    }
-}
-
-fn disable_autostart() -> Result<(), String> {
-    unsafe {
-        log_to_file("Disabling autostart");
-        
-        let key_path: Vec<u16> = OsStr::new(REGISTRY_RUN_KEY)
-            .encode_wide()
-            .chain(std::iter::once(0))
-            .collect();
-        
-        let mut hkey = HKEY::default();
-        
-        // Open the registry key with write access
-        RegOpenKeyExW(
-            HKEY_CURRENT_USER,
-            PCWSTR::from_raw(key_path.as_ptr()),
-            0,
-            KEY_WRITE,
-            &mut hkey as *mut HKEY,
-        )
-        .map_err(|e| format!("Failed to open registry key: {:?}", e))?;
-        
-        let value_name: Vec<u16> = OsStr::new(APP_NAME)
-            .encode_wide()
-            .chain(std::iter::once(0))
-            .collect();
-        
-        // Delete the registry value
-        let result = RegDeleteValueW(
-            hkey,
-            PCWSTR::from_raw(value_name.as_ptr()),
-        );
-        
-        let _ = RegCloseKey(hkey);
-        
-        result.map_err(|e| format!("Failed to delete registry value: {:?}", e))?;
-        
-        log_to_file("Autostart disabled successfully");
-        Ok(())
     }
 }
 
