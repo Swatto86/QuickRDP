@@ -40,3 +40,6 @@ opt-level = "z"  # Optimize for size
 lto = true       # Enable Link Time Optimization
 codegen-units = 1 # Reduce codegen units to improve optimization
 panic = "abort"  # Use abort for panics to reduce binary size
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-global-shortcut = "2"
