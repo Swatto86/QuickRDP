@@ -170,8 +170,17 @@ window.toggleTheme = function(themeName: string) {
   localStorage.setItem('theme', themeName);
 };
 
-function initializeTheme() {
-  const savedTheme = localStorage.getItem('theme') || 'swatto';
+async function initializeTheme() {
+  let defaultTheme = 'dark';
+  
+  // Try to get Windows theme preference
+  try {
+    defaultTheme = await invoke<string>('get_windows_theme');
+  } catch (error) {
+    console.log('Could not get Windows theme, using dark as default:', error);
+  }
+  
+  const savedTheme = localStorage.getItem('theme') || defaultTheme;
   document.documentElement.setAttribute('data-theme', savedTheme);
   
   // Add click handlers for theme menu items
@@ -323,7 +332,7 @@ function hideTimerNotification() {
 
 // Modify the main DOMContentLoaded event listener
 document.addEventListener("DOMContentLoaded", async () => {
-    initializeTheme();
+    await initializeTheme();
     initializeSearch();
     initializeServerList();
     

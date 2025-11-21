@@ -13,7 +13,22 @@ interface StoredCredentials {
 let hosts: Host[] = [];
 let filteredHosts: Host[] = [];
 
-document.addEventListener("DOMContentLoaded", () => {
+async function initializeTheme() {
+  let defaultTheme = 'dark';
+  
+  // Try to get Windows theme preference
+  try {
+    defaultTheme = await invoke<string>('get_windows_theme');
+  } catch (error) {
+    console.log('Could not get Windows theme, using dark as default:', error);
+  }
+  
+  const savedTheme = localStorage.getItem('theme') || defaultTheme;
+  document.documentElement.setAttribute('data-theme', savedTheme);
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await initializeTheme();
   loadHosts();
   setupEventListeners();
   window.addEventListener("keydown", async (e) => {
@@ -125,9 +140,6 @@ function setupEventListeners() {
       }
     }
   });
-
-  const savedTheme = localStorage.getItem('theme') || 'swatto';
-  document.documentElement.setAttribute('data-theme', savedTheme);
 
   document.getElementById("scanDomain")?.addEventListener("click", () => {
     const modal = document.getElementById("scanDomainModal") as HTMLDialogElement;

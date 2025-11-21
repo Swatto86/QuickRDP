@@ -17,7 +17,7 @@ use windows::Win32::UI::Shell::ShellExecuteW;
 use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 use windows::Win32::System::Registry::{
     RegOpenKeyExW, RegSetValueExW, RegDeleteValueW, RegQueryValueExW, RegCloseKey,
-    HKEY_CURRENT_USER, HKEY, KEY_READ, KEY_WRITE, REG_SZ
+    HKEY_CURRENT_USER, HKEY, KEY_READ, KEY_WRITE, REG_SZ, REG_VALUE_TYPE
 };
 use windows::core::{PWSTR, PCWSTR, HSTRING};
 use std::ffi::OsStr;
@@ -1498,6 +1498,98 @@ fn disable_autostart() -> Result<(), String> {
         
         // Delete the registry value
         let result = RegDeleteValueW(
+
+#[tauri::command]
+fn get_windows_theme() -> Result<String, String> {
+    unsafe {
+        // Windows theme is stored in the registry at:
+        // HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize
+        // Value: AppsUseLightTheme (0 = dark, 1 = light)
+        
+        let key_path: Vec<u16> = OsStr::new("Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize")
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect();
+        
+        let mut hkey = HKEY::default();
+        
+        // Open the registry key
+        let result = RegOpenKeyExW(
+            HKEY_CURRENT_USER,
+            PCWSTR::from_raw(key_path.as_ptr()),
+            0,
+            KEY_READ,
+            &mut hkey as *mut HKEY,
+        );
+        
+        if result.is_err() {
+            // If we can't read the registry, default to dark theme
+            return Ok("dark".to_string());
+        }
+        
+        let value_name: Vec<u16> = OsStr::new("AppsUseLightTheme")
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect();
+        
+        let mut data_type = REG_VALUE_TYPE::default();
+        let mut data: u32 = 0;
+        let mut data_size: u32 = std::mem::size_of::<u32>() as u32;
+        
+        // Query the value
+        let query_result = RegQueryValueExW(
+            hkey,
+            PCWSTR::from_raw(value_name.as_ptr()),
+            None,
+            Some(&mut data_type),
+            Some(&mut data as *mut u32 as *mut u8),
+            Some(&mut data_size),
+        );
+        
+        let _ = RegCloseKey(hkey);
+        
+        if query_result.is_ok() {
+            // 0 = dark theme, 1 (or any other value) = light theme
+            if data == 0 {
+                Ok("dark".to_string())
+            } else {
+                Ok("light".to_string())
+            }
+        } else {
+            // Default to dark if we can't read the value
+            Ok("dark".to_string())
+        }
+    }
+}
+
+fn disable_autostart() -> Result<(), String> {
+    unsafe {
+        log_to_file("Disabling autostart");
+        
+        let key_path: Vec<u16> = OsStr::new(REGISTRY_RUN_KEY)
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect();
+        
+        let mut hkey = HKEY::default();
+        
+        // Open the registry key with write access
+        RegOpenKeyExW(
+            HKEY_CURRENT_USER,
+            PCWSTR::from_raw(key_path.as_ptr()),
+            0,
+            KEY_WRITE,
+            &mut hkey as *mut HKEY,
+        )
+        .map_err(|e| format!("Failed to open registry key: {:?}", e))?;
+        
+        let value_name: Vec<u16> = OsStr::new(APP_NAME)
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect();
+        
+        // Delete the registry value
+        let result = RegDeleteValueW(
             hkey,
             PCWSTR::from_raw(value_name.as_ptr()),
         );
@@ -1766,6 +1858,7 @@ pub fn run() {
             reset_application,
             check_autostart,
             toggle_autostart,
+            get_windows_theme,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

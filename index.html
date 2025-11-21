@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="swatto">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="/src/styles.css" />
@@ -10,8 +10,8 @@
 
   <body class="min-h-screen bg-base-100 select-none flex flex-col">
     <div data-tauri-drag-region class="titlebar h-[16px]"></div>
-    <div class="fixed bottom-2 right-4 z-50">
-      <div class="dropdown dropdown-top dropdown-end">
+    <div class="fixed top-4 right-4 z-50">
+      <div class="dropdown dropdown-end">
         <button 
           tabindex="0" 
           class="btn btn-ghost btn-circle"
@@ -38,7 +38,6 @@
         <div tabindex="0" class="dropdown-content z-[1] shadow-lg bg-base-200 rounded-box w-52">
           <div class="max-h-[60vh] overflow-y-auto overflow-x-hidden">
             <ul class="menu menu-vertical">
-              <li><a data-theme-value="swatto">Swatto (Default)</a></li>
               <li><a data-theme-value="light">Light</a></li>
               <li><a data-theme-value="dark">Dark</a></li>
             </ul>
