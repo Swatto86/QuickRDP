@@ -23,8 +23,8 @@ use windows::core::{PWSTR, PCWSTR, HSTRING};
 use std::ffi::OsStr;
 use std::os::windows::ffi::OsStrExt;
 use tauri::{
-    Manager,
-    menu::{Menu, MenuItem, PredefinedMenuItem},
+    Manager, Emitter,
+    menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState},
 };
 use std::sync::Mutex;
@@ -1574,6 +1574,49 @@ fn get_windows_theme() -> Result<String, String> {
     }
 }
 
+#[tauri::command]
+fn set_theme(app_handle: tauri::AppHandle, theme: String) -> Result<(), String> {
+    // Save the theme preference in the app's data directory
+    let app_dir = app_handle.path().app_data_dir()
+        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
+    
+    std::fs::create_dir_all(&app_dir)
+        .map_err(|e| format!("Failed to create app data directory: {}", e))?;
+    
+    let theme_file = app_dir.join("theme.txt");
+    std::fs::write(&theme_file, &theme)
+        .map_err(|e| format!("Failed to write theme preference: {}", e))?;
+    
+    // Emit an event to all windows to update their theme
+    for window_label in ["login", "main", "hosts"] {
+        if let Some(window) = app_handle.get_webview_window(window_label) {
+            let _ = window.emit("theme-changed", theme.clone());
+        }
+    }
+    
+    Ok(())
+}
+
+#[tauri::command]
+fn get_theme(app_handle: tauri::AppHandle) -> Result<String, String> {
+    // Try to read the saved theme preference
+    let app_dir = match app_handle.path().app_data_dir() {
+        Ok(dir) => dir,
+        Err(_) => return get_windows_theme(), // Fallback to Windows theme
+    };
+    
+    let theme_file = app_dir.join("theme.txt");
+    
+    if theme_file.exists() {
+        match std::fs::read_to_string(&theme_file) {
+            Ok(theme) => Ok(theme.trim().to_string()),
+            Err(_) => get_windows_theme(), // Fallback to Windows theme
+        }
+    } else {
+        get_windows_theme() // Fallback to Windows theme
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Check for --debug or --debug-log command line argument
@@ -1619,11 +1662,17 @@ pub fn run() {
                 "Enable Autostart with Windows"
             };
             let autostart_item = MenuItem::with_id(app.app_handle(), "toggle_autostart", autostart_text, true, None::<&str>)?;
+            
+            // Create theme submenu items
+            let theme_light = MenuItem::with_id(app.app_handle(), "theme_light", "Light", true, None::<&str>)?;
+            let theme_dark = MenuItem::with_id(app.app_handle(), "theme_dark", "Dark", true, None::<&str>)?;
+            let theme_submenu = Submenu::with_items(app.app_handle(), "Theme", true, &[&theme_light, &theme_dark])?;
+            
             let separator = PredefinedMenuItem::separator(app)?;
             let quit_item = MenuItem::with_id(app.app_handle(), "quit", "Quit", true, None::<&str>)?;
 
-            // Create the menu with autostart and quit options
-            let menu = Menu::with_items(app, &[&autostart_item, &separator, &quit_item])?;
+            // Create the menu with autostart, theme submenu, and quit options
+            let menu = Menu::with_items(app, &[&autostart_item, &theme_submenu, &separator, &quit_item])?;
 
             // Set up close handlers for all windows
             let app_handle = app.app_handle().clone();
@@ -1756,10 +1805,16 @@ pub fn run() {
                                     
                                     // Recreate the menu with updated text
                                     if let Ok(autostart_item) = MenuItem::with_id(app, "toggle_autostart", new_text, true, None::<&str>) {
-                                        if let Ok(separator) = PredefinedMenuItem::separator(app) {
-                                            if let Ok(quit_item) = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>) {
-                                                if let Ok(new_menu) = Menu::with_items(app, &[&autostart_item, &separator, &quit_item]) {
-                                                    let _ = tray.set_menu(Some(new_menu));
+                                        if let Ok(theme_light) = MenuItem::with_id(app, "theme_light", "Light", true, None::<&str>) {
+                                            if let Ok(theme_dark) = MenuItem::with_id(app, "theme_dark", "Dark", true, None::<&str>) {
+                                                if let Ok(theme_submenu) = Submenu::with_items(app, "Theme", true, &[&theme_light, &theme_dark]) {
+                                                    if let Ok(separator) = PredefinedMenuItem::separator(app) {
+                                                        if let Ok(quit_item) = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>) {
+                                                            if let Ok(new_menu) = Menu::with_items(app, &[&autostart_item, &theme_submenu, &separator, &quit_item]) {
+                                                                let _ = tray.set_menu(Some(new_menu));
+                                                            }
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
@@ -1769,6 +1824,16 @@ pub fn run() {
                             Err(e) => {
                                 eprintln!("Failed to toggle autostart: {}", e);
                             }
+                        }
+                    }
+                    id if id == "theme_light" => {
+                        if let Err(e) = set_theme(app.clone(), "light".to_string()) {
+                            eprintln!("Failed to set theme to light: {}", e);
+                        }
+                    }
+                    id if id == "theme_dark" => {
+                        if let Err(e) = set_theme(app.clone(), "dark".to_string()) {
+                            eprintln!("Failed to set theme to dark: {}", e);
                         }
                     }
                     id if id == "quit" => {
@@ -1830,6 +1895,8 @@ pub fn run() {
             check_autostart,
             toggle_autostart,
             get_windows_theme,
+            set_theme,
+            get_theme,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

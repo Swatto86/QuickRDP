@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from '@tauri-apps/api/event';
 
 interface StoredCredentials {
   username: string;
@@ -156,53 +157,23 @@ async function checkCredentialsExist() {
     updateButtonStates(false);
   }
 }
-
-// Declare the function as a global
-declare global {
-  interface Window {
-    toggleTheme: (themeName: string) => void;
-  }
-}
-
-// Assign the function to window object
-window.toggleTheme = function(themeName: string) {
-  document.documentElement.setAttribute('data-theme', themeName);
-  localStorage.setItem('theme', themeName);
-};
-
 async function initializeTheme() {
   let defaultTheme = 'dark';
   
-  // Try to get Windows theme preference
+  // Try to get saved theme preference
   try {
-    defaultTheme = await invoke<string>('get_windows_theme');
+    defaultTheme = await invoke<string>('get_theme');
   } catch (error) {
-    console.log('Could not get Windows theme, using dark as default:', error);
+    console.log('Could not get saved theme, using dark as default:', error);
   }
   
-  const savedTheme = localStorage.getItem('theme') || defaultTheme;
-  document.documentElement.setAttribute('data-theme', savedTheme);
+  document.documentElement.setAttribute('data-theme', defaultTheme);
   
-  // Add click handlers for theme menu items
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const themeValue = target.getAttribute('data-theme-value');
-    
-    if (themeValue) {
-      document.documentElement.setAttribute('data-theme', themeValue);
-      localStorage.setItem('theme', themeValue);
-      
-      // Find and close the dropdown by removing focus
-      const dropdownContent = target.closest('.dropdown-content');
-      if (dropdownContent) {
-        (dropdownContent as HTMLElement).blur();
-        // Also blur the parent dropdown
-        const dropdown = dropdownContent.parentElement;
-        if (dropdown) {
-          dropdown.blur();
-        }
-      }
-    }
+  // Listen for theme change events from the system tray
+  await listen<string>('theme-changed', (event) => {
+    const newTheme = event.payload;
+    document.documentElement.setAttribute('data-theme', newTheme);
+    console.log('Theme changed to:', newTheme);
   });
 }
 

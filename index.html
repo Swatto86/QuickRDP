@@ -10,41 +10,6 @@
 
   <body class="min-h-screen bg-base-100 select-none flex flex-col">
     <div data-tauri-drag-region class="titlebar h-[16px]"></div>
-    <div class="fixed top-4 right-4 z-50">
-      <div class="dropdown dropdown-end">
-        <button 
-          tabindex="0" 
-          class="btn btn-ghost btn-circle"
-          aria-label="Toggle theme selector"
-          title="Toggle theme"
-        >
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            class="h-5 w-5" 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path 
-              stroke-linecap="round" 
-              stroke-linejoin="round" 
-              stroke-width="2" 
-              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" 
-            />
-          </svg>
-          <span class="sr-only">Toggle theme</span>
-        </button>
-        <div tabindex="0" class="dropdown-content z-[1] shadow-lg bg-base-200 rounded-box w-52">
-          <div class="max-h-[60vh] overflow-y-auto overflow-x-hidden">
-            <ul class="menu menu-vertical">
-              <li><a data-theme-value="light">Light</a></li>
-              <li><a data-theme-value="dark">Dark</a></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
     <main class="flex-1 flex flex-col items-center justify-center -mt-12">
       <div class="w-full">
         <form

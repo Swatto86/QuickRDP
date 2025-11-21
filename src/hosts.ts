@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from '@tauri-apps/api/event';
 
 interface Host {
   hostname: string;
@@ -16,15 +17,21 @@ let filteredHosts: Host[] = [];
 async function initializeTheme() {
   let defaultTheme = 'dark';
   
-  // Try to get Windows theme preference
+  // Try to get saved theme preference
   try {
-    defaultTheme = await invoke<string>('get_windows_theme');
+    defaultTheme = await invoke<string>('get_theme');
   } catch (error) {
-    console.log('Could not get Windows theme, using dark as default:', error);
+    console.log('Could not get saved theme, using dark as default:', error);
   }
   
-  const savedTheme = localStorage.getItem('theme') || defaultTheme;
-  document.documentElement.setAttribute('data-theme', savedTheme);
+  document.documentElement.setAttribute('data-theme', defaultTheme);
+  
+  // Listen for theme change events from the system tray
+  await listen<string>('theme-changed', (event) => {
+    const newTheme = event.payload;
+    document.documentElement.setAttribute('data-theme', newTheme);
+    console.log('Theme changed to:', newTheme);
+  });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -118,26 +125,6 @@ function setupEventListeners() {
       await invoke("hide_hosts_window");
     } catch (err) {
       console.error("Error hiding hosts window:", err);
-    }
-  });
-
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    const themeValue = target.getAttribute('data-theme-value');
-    
-    if (themeValue) {
-      document.documentElement.setAttribute('data-theme', themeValue);
-      localStorage.setItem('theme', themeValue);
-      
-      // Close the dropdown
-      const dropdownContent = target.closest('.dropdown-content');
-      if (dropdownContent) {
-        (dropdownContent as HTMLElement).blur();
-        const dropdown = dropdownContent.parentElement;
-        if (dropdown) {
-          dropdown.blur();
-        }
-      }
     }
   });
 
