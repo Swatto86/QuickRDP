@@ -9,43 +9,92 @@
 </head>
 
 <body class="bg-base-100 h-screen flex items-center justify-center">
-  <div class="w-full max-w-md px-12 flex flex-col gap-5 -mt-6"> <!-- Header -->
+  <div class="w-full max-w-md px-12 flex flex-col gap-5 -mt-6">
+
+    <!-- Header -->
     <div class="text-center">
-      <h1 class="text-2xl font-bold text-primary mb-4">QuickRDP</h1>
-      <p class="text-base-content/70 text-sm mb-4">Version 1.1.0</p>
-    </div> <!-- Description -->
+      <div class="mb-4">
+        <div class="flex justify-center">
+          <h1 class="text-2xl font-bold text-primary mb-1"
+            style="border-bottom: 2px solid currentColor; padding-bottom: 4px; display: inline-block;">QuickRDP</h1>
+        </div>
+        <p class="text-base-content/70 text-sm">Version 1.1.0</p>
+      </div>
+    </div>
+
+    <!-- Description -->
     <div class="text-center">
-      <p class="text-base-content text-sm"> A fast and efficient RDP connection manager for Windows. </p>
-    </div> <!-- Keyboard Shortcuts -->
+      <div class="mb-4">
+        <p class="text-base-content text-sm">
+          A fast and efficient RDP connection manager for Windows.
+        </p>
+      </div>
+    </div>
+
+    <!-- Keyboard Shortcuts -->
     <div class="text-center">
-      <h2 class="text-lg font-semibold text-primary mb-2">Keyboard Shortcuts</h2>
+      <div class="flex justify-center mb-2">
+        <h2 class="text-lg font-semibold text-primary"
+          style="border-bottom: 2px solid currentColor; padding-bottom: 4px; display: inline-block;">Keyboard Shortcuts
+        </h2>
+      </div>
       <div class="space-y-2 text-sm">
         <div class="flex items-center justify-center gap-2">
-          <div class="flex items-center gap-1"> <kbd class="kbd kbd-sm">Ctrl</kbd> <span>+</span> <kbd
-              class="kbd kbd-sm">Shift</kbd> <span>+</span> <kbd class="kbd kbd-sm">R</kbd> </div> <span
-            class="text-base-content/80">Show/Focus Connect to Server window</span>
+          <div class="flex items-center gap-1">
+            <kbd class="kbd kbd-sm">Ctrl</kbd>
+            <span>+</span>
+            <kbd class="kbd kbd-sm">Shift</kbd>
+            <span>+</span>
+            <kbd class="kbd kbd-sm">R</kbd>
+          </div>
+          <span class="text-base-content/80">Show/Focus Connect to Server window</span>
         </div>
         <div class="flex items-center justify-center gap-2">
-          <div class="flex items-center gap-1"> <kbd class="kbd kbd-sm">Ctrl</kbd> <span>+</span> <kbd
-              class="kbd kbd-sm">Shift</kbd> <span>+</span> <kbd class="kbd kbd-sm">Alt</kbd> <span>+</span> <kbd
-              class="kbd kbd-sm">R</kbd> </div> <span class="text-base-content/80">Reset application data</span>
+          <div class="flex items-center gap-1">
+            <kbd class="kbd kbd-sm">Ctrl</kbd>
+            <span>+</span>
+            <kbd class="kbd kbd-sm">Shift</kbd>
+            <span>+</span>
+            <kbd class="kbd kbd-sm">Alt</kbd>
+            <span>+</span>
+            <kbd class="kbd kbd-sm">R</kbd>
+          </div>
+          <span class="text-base-content/80">Reset application data</span>
         </div>
       </div>
-    </div> <!-- Features -->
+    </div>
+
+    <!-- Features -->
     <div class="text-center">
-      <h2 class="text-lg font-semibold text-primary mb-2">Features</h2>
+      <div class="mb-1">
+      </div>
+      <div class="mb-3">
+      </div>
+      <div class="flex justify-center mb-2">
+        <h2 class="text-lg font-semibold text-primary"
+          style="border-bottom: 2px solid currentColor; padding-bottom: 4px; display: inline-block;">Features</h2>
+      </div>
       <ul class="space-y-1.5 text-sm text-base-content/80 list-none">
         <li>Secure credential storage using Windows Credential Manager</li>
         <li>Quick server search with real-time filtering</li>
         <li>System tray integration for easy access</li>
         <li>Dark and light theme support</li>
-        <li></li>
-    </div> <!-- Footer -->
-    <div class="pt-8 mt-1">
-      <div class="text-center mb-3"> <button id="closeBtn" class="btn btn-primary btn-sm"> Close </button> </div>
+      </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="pt-6">
+      <div class="text-center mb-6">
+        <div class="mb-4">
+        </div>
+        <button id="closeBtn" class="btn btn-primary btn-sm px-8">
+          Close
+        </button>
+      </div>
       <p class="text-xs text-base-content/60 text-center">© 2025 QuickRDP. All rights reserved.</p>
     </div>
   </div>
+
   <script type="module" src="/src/about.ts"></script>
 </body>
 

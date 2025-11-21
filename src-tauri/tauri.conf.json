@@ -67,7 +67,7 @@
       {
         "label": "about",
         "width": 420,
-        "height": 380,
+        "height": 480,
         "resizable": false,
         "title": "About QuickRDP",
         "url": "about.html",
@@ -89,7 +89,7 @@
     "active": true,
     "targets": "all",
     "publisher": "Swatto",
-    "copyright": "Copyright © 2024 Swatto. All rights reserved.",
+    "copyright": "Copyright © 2025 Swatto. All rights reserved.",
     "category": "Utility",
     "shortDescription": "Fast RDP connection manager for system administrators",
     "longDescription": "QuickRDP is a fast and efficient RDP connection manager designed for Windows system administrators. It enables you to save, search, and connect to multiple Windows servers with secure credential storage.",
