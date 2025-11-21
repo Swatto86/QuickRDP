@@ -4,42 +4,13 @@ async fn quit_app(app_handle: tauri::AppHandle) {
 }
 
 #[tauri::command]
-fn show_about() {
-    use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONINFORMATION, MB_OK};
-    
-    let title = "About QuickRDP";
-    let message = "QuickRDP v1.1.0\n\
-                   \n\
-                   A fast and efficient RDP connection manager for Windows.\n\
-                   \n\
-                   Keyboard Shortcuts:\n\
-                   • Ctrl+Shift+R - Show/Focus Connect to Server window\n\
-                   • Ctrl+Shift+Alt+R - Reset application data\n\
-                   \n\
-                   Features:\n\
-                   • Secure credential storage using Windows Credential Manager\n\
-                   • Quick server search with real-time filtering\n\
-                   • System tray integration for easy access\n\
-                   • Dark and light theme support\n\
-                   \n\
-                   © 2025 QuickRDP. All rights reserved.";
-    
-    unsafe {
-        let title_wide: Vec<u16> = OsStr::new(title)
-            .encode_wide()
-            .chain(std::iter::once(0))
-            .collect();
-        let message_wide: Vec<u16> = OsStr::new(message)
-            .encode_wide()
-            .chain(std::iter::once(0))
-            .collect();
-        
-        MessageBoxW(
-            None,
-            PCWSTR::from_raw(message_wide.as_ptr()),
-            PCWSTR::from_raw(title_wide.as_ptr()),
-            MB_OK | MB_ICONINFORMATION,
-        );
+fn show_about(app_handle: tauri::AppHandle) -> Result<(), String> {
+    if let Some(about_window) = app_handle.get_webview_window("about") {
+        about_window.show().map_err(|e| e.to_string())?;
+        about_window.set_focus().map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err("About window not found".to_string())
     }
 }
 
@@ -2065,9 +2036,16 @@ fn set_theme(app_handle: tauri::AppHandle, theme: String) -> Result<(), String> 
         .map_err(|e| format!("Failed to write theme preference: {}", e))?;
 
     // Emit an event to all windows to update their theme
-    for window_label in ["login", "main", "hosts"] {
+    for window_label in ["login", "main", "hosts", "about"] {
         if let Some(window) = app_handle.get_webview_window(window_label) {
             let _ = window.emit("theme-changed", theme.clone());
+        }
+    }
+
+    // Rebuild tray menu with new theme
+    if let Some(tray) = app_handle.tray_by_id("main") {
+        if let Ok(menu) = build_tray_menu(&app_handle, &theme) {
+            let _ = tray.set_menu(Some(menu));
         }
     }
 
@@ -2092,6 +2070,55 @@ fn get_theme(app_handle: tauri::AppHandle) -> Result<String, String> {
     } else {
         get_windows_theme() // Fallback to Windows theme
     }
+}
+
+// Helper function to build tray menu with theme awareness
+fn build_tray_menu(app: &tauri::AppHandle, current_theme: &str) -> Result<Menu<tauri::Wry>, Box<dyn std::error::Error>> {
+    // Check autostart status
+    let autostart_enabled = check_autostart().unwrap_or(false);
+    let autostart_text = format!(
+        "{} Autostart with Windows",
+        if autostart_enabled { "✓" } else { "✗" }
+    );
+    let autostart_item = MenuItem::with_id(
+        app,
+        "toggle_autostart",
+        &autostart_text,
+        true,
+        None::<&str>,
+    )?;
+
+    // Create theme menu items with checkmarks
+    let theme_light = MenuItem::with_id(
+        app,
+        "theme_light",
+        format!("Light {}", if current_theme == "light" { "✓" } else { "" }),
+        true,
+        None::<&str>,
+    )?;
+    let theme_dark = MenuItem::with_id(
+        app,
+        "theme_dark",
+        format!("Dark {}", if current_theme == "dark" { "✓" } else { "" }),
+        true,
+        None::<&str>,
+    )?;
+
+    let theme_submenu = Submenu::with_items(
+        app,
+        "Theme",
+        true,
+        &[&theme_light, &theme_dark],
+    )?;
+
+    let about_item = MenuItem::with_id(app, "about", "About QuickRDP", true, None::<&str>)?;
+    let separator = PredefinedMenuItem::separator(app)?;
+    let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+
+    Menu::with_items(
+        app,
+        &[&autostart_item, &theme_submenu, &about_item, &separator, &quit_item],
+    ).map_err(|e| e.into())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -2146,45 +2173,11 @@ pub fn run() {
                 *last_hidden = "login".to_string();
             }
 
-            // Create menu items
-            let autostart_enabled = check_autostart().unwrap_or(false);
-            let autostart_text = if autostart_enabled {
-                "Disable Autostart with Windows"
-            } else {
-                "Enable Autostart with Windows"
-            };
-            let autostart_item = MenuItem::with_id(
-                app.app_handle(),
-                "toggle_autostart",
-                autostart_text,
-                true,
-                None::<&str>,
-            )?;
+            // Get current theme for tray menu
+            let current_theme = get_theme(app.app_handle().clone()).unwrap_or_else(|_| "dark".to_string());
 
-            // Create theme submenu items
-            let theme_light =
-                MenuItem::with_id(app.app_handle(), "theme_light", "Light", true, None::<&str>)?;
-            let theme_dark =
-                MenuItem::with_id(app.app_handle(), "theme_dark", "Dark", true, None::<&str>)?;
-            let theme_submenu = Submenu::with_items(
-                app.app_handle(),
-                "Theme",
-                true,
-                &[&theme_light, &theme_dark],
-            )?;
-
-            let about_item =
-                MenuItem::with_id(app.app_handle(), "about", "About QuickRDP", true, None::<&str>)?;
-
-            let separator = PredefinedMenuItem::separator(app)?;
-            let quit_item =
-                MenuItem::with_id(app.app_handle(), "quit", "Quit", true, None::<&str>)?;
-
-            // Create the menu with autostart, theme submenu, about, and quit options
-            let menu = Menu::with_items(
-                app,
-                &[&autostart_item, &theme_submenu, &about_item, &separator, &quit_item],
-            )?;
+            // Build the tray menu with theme awareness
+            let menu = build_tray_menu(app.app_handle(), &current_theme)?;
 
             // Set up close handlers for all windows
             let app_handle = app.app_handle().clone();
@@ -2224,6 +2217,18 @@ pub fn run() {
                         *last_hidden = "hosts".to_string();
                     }
                     let _ = app_handle.get_webview_window("hosts").unwrap().hide();
+                    // Prevent the window from being destroyed
+                    api.prevent_close();
+                }
+            });
+
+            // Set up close handler for about window (just hide it)
+            let app_handle = app.app_handle().clone();
+            let about_window = app.get_webview_window("about").unwrap();
+            about_window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    println!("Close requested for about window");
+                    let _ = app_handle.get_webview_window("about").unwrap().hide();
                     // Prevent the window from being destroyed
                     api.prevent_close();
                 }
@@ -2328,79 +2333,13 @@ pub fn run() {
                 .on_menu_event(|app, event| match event.id() {
                     id if id == "toggle_autostart" => {
                         match toggle_autostart() {
-                            Ok(enabled) => {
-                                // Update the menu item text
+                            Ok(_enabled) => {
+                                // Rebuild the entire menu with updated autostart status and current theme
                                 if let Some(tray) = app.tray_by_id("main") {
-                                    let new_text = if enabled {
-                                        "Disable Autostart with Windows"
-                                    } else {
-                                        "Enable Autostart with Windows"
-                                    };
-
-                                    // Recreate the menu with updated text
-                                    if let Ok(autostart_item) = MenuItem::with_id(
-                                        app,
-                                        "toggle_autostart",
-                                        new_text,
-                                        true,
-                                        None::<&str>,
-                                    ) {
-                                        if let Ok(theme_light) = MenuItem::with_id(
-                                            app,
-                                            "theme_light",
-                                            "Light",
-                                            true,
-                                            None::<&str>,
-                                        ) {
-                                            if let Ok(theme_dark) = MenuItem::with_id(
-                                                app,
-                                                "theme_dark",
-                                                "Dark",
-                                                true,
-                                                None::<&str>,
-                                            ) {
-                                                if let Ok(theme_submenu) = Submenu::with_items(
-                                                    app,
-                                                    "Theme",
-                                                    true,
-                                                    &[&theme_light, &theme_dark],
-                                                ) {
-                                                    if let Ok(about_item) = MenuItem::with_id(
-                                                        app,
-                                                        "about",
-                                                        "About QuickRDP",
-                                                        true,
-                                                        None::<&str>,
-                                                    ) {
-                                                        if let Ok(separator) =
-                                                            PredefinedMenuItem::separator(app)
-                                                        {
-                                                            if let Ok(quit_item) = MenuItem::with_id(
-                                                                app,
-                                                                "quit",
-                                                                "Quit",
-                                                                true,
-                                                                None::<&str>,
-                                                            ) {
-                                                                if let Ok(new_menu) = Menu::with_items(
-                                                                    app,
-                                                                    &[
-                                                                        &autostart_item,
-                                                                        &theme_submenu,
-                                                                        &about_item,
-                                                                        &separator,
-                                                                        &quit_item,
-                                                                    ],
-                                                                ) {
-                                                                    let _ =
-                                                                        tray.set_menu(Some(new_menu));
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
+                                    let current_theme = get_theme(app.clone())
+                                        .unwrap_or_else(|_| "dark".to_string());
+                                    if let Ok(new_menu) = build_tray_menu(app, &current_theme) {
+                                        let _ = tray.set_menu(Some(new_menu));
                                     }
                                 }
                             }
@@ -2420,7 +2359,9 @@ pub fn run() {
                         }
                     }
                     id if id == "about" => {
-                        show_about();
+                        if let Err(e) = show_about(app.clone()) {
+                            eprintln!("Failed to show about window: {}", e);
+                        }
                     }
                     id if id == "quit" => {
                         app.exit(0);

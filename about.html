@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About QuickRDP</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+</head>
+
+<body class="bg-base-100 h-screen flex items-center justify-center">
+  <div class="w-full max-w-md px-12 flex flex-col gap-5 -mt-6"> <!-- Header -->
+    <div class="text-center">
+      <h1 class="text-2xl font-bold text-primary mb-4">QuickRDP</h1>
+      <p class="text-base-content/70 text-sm mb-4">Version 1.1.0</p>
+    </div> <!-- Description -->
+    <div class="text-center">
+      <p class="text-base-content text-sm"> A fast and efficient RDP connection manager for Windows. </p>
+    </div> <!-- Keyboard Shortcuts -->
+    <div class="text-center">
+      <h2 class="text-lg font-semibold text-primary mb-2">Keyboard Shortcuts</h2>
+      <div class="space-y-2 text-sm">
+        <div class="flex items-center justify-center gap-2">
+          <div class="flex items-center gap-1"> <kbd class="kbd kbd-sm">Ctrl</kbd> <span>+</span> <kbd
+              class="kbd kbd-sm">Shift</kbd> <span>+</span> <kbd class="kbd kbd-sm">R</kbd> </div> <span
+            class="text-base-content/80">Show/Focus Connect to Server window</span>
+        </div>
+        <div class="flex items-center justify-center gap-2">
+          <div class="flex items-center gap-1"> <kbd class="kbd kbd-sm">Ctrl</kbd> <span>+</span> <kbd
+              class="kbd kbd-sm">Shift</kbd> <span>+</span> <kbd class="kbd kbd-sm">Alt</kbd> <span>+</span> <kbd
+              class="kbd kbd-sm">R</kbd> </div> <span class="text-base-content/80">Reset application data</span>
+        </div>
+      </div>
+    </div> <!-- Features -->
+    <div class="text-center">
+      <h2 class="text-lg font-semibold text-primary mb-2">Features</h2>
+      <ul class="space-y-1.5 text-sm text-base-content/80 list-none">
+        <li>Secure credential storage using Windows Credential Manager</li>
+        <li>Quick server search with real-time filtering</li>
+        <li>System tray integration for easy access</li>
+        <li>Dark and light theme support</li>
+        <li></li>
+    </div> <!-- Footer -->
+    <div class="pt-8 mt-1">
+      <div class="text-center mb-3"> <button id="closeBtn" class="btn btn-primary btn-sm"> Close </button> </div>
+      <p class="text-xs text-base-content/60 text-center">© 2025 QuickRDP. All rights reserved.</p>
+    </div>
+  </div>
+  <script type="module" src="/src/about.ts"></script>
+</body>
+
+</html>

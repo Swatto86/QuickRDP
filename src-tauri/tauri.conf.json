@@ -63,6 +63,22 @@
         "alwaysOnTop": false,
         "center": true,
         "devtools": false
+      },
+      {
+        "label": "about",
+        "width": 420,
+        "height": 380,
+        "resizable": false,
+        "title": "About QuickRDP",
+        "url": "about.html",
+        "transparent": false,
+        "decorations": true,
+        "visible": false,
+        "focus": true,
+        "skipTaskbar": true,
+        "alwaysOnTop": true,
+        "center": true,
+        "devtools": false
       }
     ],
     "security": {
