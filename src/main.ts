@@ -191,76 +191,138 @@ let timerNotificationElement: HTMLElement | null = null;
 // Flag to track if user intentionally returned to login (don't show timer)
 let isIntentionalReturn = false;
 
-async function handleSearch() {
-    const searchInput = document.querySelector("#search-input") as HTMLInputElement;
-    const serverList = document.querySelector("#server-list") as HTMLElement;
+// Store all hosts globally for client-side filtering
+let allHosts: Host[] = [];
+
+// Function to highlight matching characters in text
+function highlightMatches(text: string, query: string): string {
+    if (!query.trim()) return text;
     
-    if (!searchInput || !serverList) return;
-
-    try {
-        // If search input is empty, clear the list and show default message
-        if (!searchInput.value.trim()) {
-            serverList.innerHTML = `
-                <div class="text-center text-base-content/60 p-4">
-                    Search for servers to connect
-                </div>
-            `;
-            return;
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    const parts: string[] = [];
+    let lastIndex = 0;
+    
+    let index = lowerText.indexOf(lowerQuery, lastIndex);
+    while (index !== -1) {
+        // Add text before match
+        if (index > lastIndex) {
+            parts.push(text.substring(lastIndex, index));
         }
+        // Add highlighted match
+        parts.push(`<mark class="bg-yellow-300 dark:bg-yellow-600 text-base-content">${text.substring(index, index + lowerQuery.length)}</mark>`);
+        lastIndex = index + lowerQuery.length;
+        index = lowerText.indexOf(lowerQuery, lastIndex);
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+        parts.push(text.substring(lastIndex));
+    }
+    
+    return parts.join('');
+}
 
-        const results = await invoke<Host[]>("search_hosts", {
-            query: searchInput.value
-        });
+// Function to render hosts list
+function renderHostsList(hosts: Host[], query: string = '') {
+    const serverList = document.querySelector("#server-list") as HTMLElement;
+    if (!serverList) return;
 
-        // Clear existing items
-        serverList.innerHTML = "";
+    serverList.innerHTML = "";
 
-        if (results.length === 0) {
-            serverList.innerHTML = `
-                <div class="text-center text-base-content/60 p-4">
-                    No matching hosts found
-                </div>
-            `;
-            return;
-        }
-
-        // Add new results
-        results.forEach(host => {
-            const item = document.createElement("div");
-            item.className = "flex items-center justify-between p-4 border-b border-base-300 last:border-b-0";
-            
-            item.innerHTML = `
-                <div class="flex flex-col">
-                    <span class="font-medium">${host.hostname}</span>
-                    <span class="text-sm opacity-70">${host.description}</span>
-                </div>
-                <button class="connect-btn btn btn-primary btn-sm">
-                    Connect
-                </button>
-            `;
-
-            // Add click handler for the connect button
-            const connectBtn = item.querySelector('.connect-btn');
-            if (connectBtn) {
-                connectBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    try {
-                        await invoke("launch_rdp", { host });
-                    } catch (err) {
-                        console.error("Failed to connect:", err);
-                    }
-                });
-            }
-
-            serverList.appendChild(item);
-        });
-    } catch (err) {
-        console.error("Search failed:", err);
+    if (hosts.length === 0) {
         serverList.innerHTML = `
-            <div class="text-center text-error p-4">
-                Failed to search hosts
+            <div class="text-center text-base-content/60 p-4">
+                ${query ? 'No matching hosts found' : 'No hosts available. Click "Manage Hosts" to add servers.'}
             </div>
         `;
+        return;
+    }
+
+    hosts.forEach(host => {
+        const item = document.createElement("div");
+        item.className = "flex items-center justify-between p-4 border-b border-base-300 last:border-b-0 hover:bg-base-300 cursor-pointer transition-colors";
+        
+        const highlightedHostname = highlightMatches(host.hostname, query);
+        const highlightedDescription = highlightMatches(host.description, query);
+        
+        item.innerHTML = `
+            <div class="flex flex-col flex-1">
+                <span class="font-medium">${highlightedHostname}</span>
+                <span class="text-sm opacity-70">${highlightedDescription}</span>
+            </div>
+            <button class="connect-btn btn btn-primary btn-sm">
+                Connect
+            </button>
+        `;
+
+        // Add click handler for the entire row
+        item.addEventListener('click', async (e) => {
+            const target = e.target as HTMLElement;
+            // Don't trigger row click if connect button was clicked
+            if (!target.classList.contains('connect-btn') && !target.closest('.connect-btn')) {
+                try {
+                    await invoke("launch_rdp", { host });
+                } catch (err) {
+                    console.error("Failed to connect:", err);
+                }
+            }
+        });
+
+        // Add click handler for the connect button
+        const connectBtn = item.querySelector('.connect-btn');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                try {
+                    await invoke("launch_rdp", { host });
+                } catch (err) {
+                    console.error("Failed to connect:", err);
+                }
+            });
+        }
+
+        serverList.appendChild(item);
+    });
+}
+
+// Function to filter hosts based on search query
+function filterHosts(query: string): Host[] {
+    if (!query.trim()) {
+        return allHosts;
+    }
+    
+    const lowerQuery = query.toLowerCase();
+    return allHosts.filter(host => 
+        host.hostname.toLowerCase().includes(lowerQuery) ||
+        host.description.toLowerCase().includes(lowerQuery)
+    );
+}
+
+async function handleSearch() {
+    const searchInput = document.querySelector("#search-input") as HTMLInputElement;
+    if (!searchInput) return;
+
+    const query = searchInput.value;
+    const filteredHosts = filterHosts(query);
+    renderHostsList(filteredHosts, query);
+}
+
+// Load all hosts from backend
+async function loadAllHosts() {
+    try {
+        allHosts = await invoke<Host[]>("get_all_hosts");
+        renderHostsList(allHosts);
+    } catch (err) {
+        console.error("Failed to load hosts:", err);
+        const serverList = document.querySelector("#server-list") as HTMLElement;
+        if (serverList) {
+            serverList.innerHTML = `
+                <div class="text-center text-error p-4">
+                    Failed to load hosts
+                </div>
+            `;
+        }
     }
 }
 
@@ -268,25 +330,18 @@ function initializeSearch() {
     const searchInput = document.querySelector("#search-input") as HTMLInputElement;
     
     if (searchInput) {
-        // Handle input changes with debounce
+        // Handle input changes with debounce for smoother performance
         searchInput.addEventListener("input", () => {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 handleSearch();
-            }, 300);
+            }, 150);
         });
     }
 }
 
-function initializeServerList() {
-    const serverList = document.querySelector("#server-list") as HTMLElement;
-    if (serverList) {
-        serverList.innerHTML = `
-            <div class="text-center text-base-content/60 p-4">
-                Search for servers to connect
-            </div>
-        `;
-    }
+async function initializeServerList() {
+    await loadAllHosts();
 }
 
 // Function to hide timer notification
@@ -305,7 +360,7 @@ function hideTimerNotification() {
 document.addEventListener("DOMContentLoaded", async () => {
     await initializeTheme();
     initializeSearch();
-    initializeServerList();
+    await initializeServerList();
     
     // Banner is already hidden in HTML with class="hidden", no need to hide on page load
     // It will be shown only when auto-close timer starts (if credentials exist)

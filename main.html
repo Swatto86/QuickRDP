@@ -25,15 +25,17 @@
           <input 
             type="text" 
             id="search-input" 
-            placeholder="Search hosts..." 
+            placeholder="Search hosts by name or description..." 
             class="input input-bordered w-full"
           />
         </div>
       </div>
 
-      <!-- Server List - adjust height to be more compact -->
-      <div id="server-list" class="bg-base-200 rounded-lg p-4 mb-16 overflow-y-auto">
-        <p class="text-center text-base-content/60">Search for servers to connect</p>
+      <!-- Server List - scrollable listbox -->
+      <div class="flex-1 bg-base-200 rounded-lg overflow-hidden mb-16">
+        <div id="server-list" class="h-full overflow-y-auto">
+          <p class="text-center text-base-content/60 p-4">Loading hosts...</p>
+        </div>
       </div>
 
       <!-- Footer with buttons -->

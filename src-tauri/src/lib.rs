@@ -111,6 +111,11 @@ async fn save_credentials(credentials: Credentials) -> Result<(), String> {
 }
 
 #[tauri::command]
+async fn get_all_hosts() -> Result<Vec<Host>, String> {
+    get_hosts()
+}
+
+#[tauri::command]
 async fn search_hosts(query: String) -> Result<Vec<Host>, String> {
     let hosts = get_hosts()?;
     let query = query.to_lowercase();
@@ -1882,6 +1887,7 @@ pub fn run() {
             hide_main_window,
             show_hosts_window,
             get_hosts,
+            get_all_hosts,
             save_host,
             delete_host,
             hide_hosts_window,
