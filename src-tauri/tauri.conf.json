@@ -1,0 +1,93 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "QuickRDP",
+  "version": "1.1.0",
+  "identifier": "com.swatto.quickrdp",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "login",
+        "width": 400,
+        "height": 370,
+        "resizable": false,
+        "title": "QuickRDP",
+        "url": "index.html",
+        "transparent": true,
+        "decorations": true,
+        "visible": false,
+        "focus": true,
+        "skipTaskbar": false,
+        "alwaysOnTop": false,
+        "center": true,
+        "devtools": false
+      },
+      {
+        "label": "main",
+        "width": 800,
+        "height": 400,
+        "minWidth": 800,
+        "minHeight": 400,
+        "resizable": true,
+        "title": "QuickRDP",
+        "url": "main.html",
+        "transparent": false,
+        "decorations": true,
+        "visible": false,
+        "focus": true,
+        "skipTaskbar": false,
+        "alwaysOnTop": false,
+        "center": true,
+        "devtools": false
+      },
+      {
+        "label": "hosts",
+        "width": 800,
+        "height": 400,
+        "minWidth": 600,
+        "minHeight": 500,
+        "resizable": true,
+        "title": "QuickRDP",
+        "url": "hosts.html",
+        "transparent": false,
+        "decorations": true,
+        "visible": false,
+        "focus": true,
+        "skipTaskbar": false,
+        "alwaysOnTop": false,
+        "center": true,
+        "devtools": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "publisher": "Swatto",
+    "copyright": "Copyright © 2024 Swatto. All rights reserved.",
+    "category": "Utility",
+    "shortDescription": "Fast RDP connection manager for system administrators",
+    "longDescription": "QuickRDP is a fast and efficient RDP connection manager designed for Windows system administrators. It enables you to save, search, and connect to multiple Windows servers with secure credential storage.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "wix": {
+        "language": "en-US"
+      }
+    }
+  }
+}
