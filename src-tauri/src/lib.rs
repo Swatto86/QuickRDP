@@ -378,12 +378,14 @@ async fn toggle_visible_window(app_handle: tauri::AppHandle) -> Result<(), tauri
 
 #[tauri::command]
 async fn close_login_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+    debug_log("DEBUG", "WINDOW", "Closing login window", None);
     if let Some(window) = app_handle.get_webview_window("login") {
         // Update LAST_HIDDEN_WINDOW before hiding
         if let Ok(mut last_hidden) = LAST_HIDDEN_WINDOW.lock() {
             *last_hidden = "login".to_string();
         }
         window.hide().map_err(|e| e.to_string())?;
+        debug_log("DEBUG", "WINDOW", "Login window closed successfully", None);
     }
     Ok(())
 }
@@ -412,6 +414,7 @@ async fn get_login_window(app_handle: tauri::AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 async fn show_login_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+    debug_log("DEBUG", "WINDOW", "Showing login window", None);
     if let Some(login_window) = app_handle.get_webview_window("login") {
         // First hide main window if it's visible
         if let Some(main_window) = app_handle.get_webview_window("main") {
@@ -512,8 +515,10 @@ async fn hide_hosts_window(app_handle: tauri::AppHandle) -> Result<(), String> {
 
 #[tauri::command]
 fn get_hosts() -> Result<Vec<Host>, String> {
+    debug_log("DEBUG", "CSV_OPERATIONS", "Reading hosts from CSV", None);
     let path = std::path::Path::new("hosts.csv");
     if !path.exists() {
+        debug_log("INFO", "CSV_OPERATIONS", "hosts.csv does not exist, returning empty list", None);
         return Ok(Vec::new());
     }
 
@@ -545,11 +550,24 @@ fn get_hosts() -> Result<Vec<Host>, String> {
         }
     }
 
+    debug_log(
+        "DEBUG",
+        "CSV_OPERATIONS",
+        &format!("Successfully loaded {} hosts from CSV", hosts.len()),
+        None,
+    );
     Ok(hosts)
 }
 
 #[tauri::command]
 fn save_host(host: Host) -> Result<(), String> {
+    debug_log(
+        "INFO",
+        "CSV_OPERATIONS",
+        &format!("Saving host: {} - {}", host.hostname, host.description),
+        None,
+    );
+    
     // Create hosts.csv if it doesn't exist
     if !std::path::Path::new("hosts.csv").exists() {
         let mut wtr = csv::WriterBuilder::new()
@@ -587,10 +605,12 @@ fn save_host(host: Host) -> Result<(), String> {
 
     // Write records
     for host in hosts {
-        log_to_file(&format!(
-            "Writing host to CSV: {} - {}",
-            host.hostname, host.description
-        ));
+        debug_log(
+            "DEBUG",
+            "CSV_OPERATIONS",
+            &format!("Writing host to CSV: {} - {}", host.hostname, host.description),
+            None,
+        );
         wtr.write_record(&[
             &host.hostname,
             &host.description,
@@ -607,6 +627,13 @@ fn save_host(host: Host) -> Result<(), String> {
 
 #[tauri::command]
 fn delete_host(hostname: String) -> Result<(), String> {
+    debug_log(
+        "INFO",
+        "CSV_OPERATIONS",
+        &format!("Deleting host: {}", hostname),
+        None,
+    );
+    
     let hosts: Vec<Host> = get_hosts()?
         .into_iter()
         .filter(|h| h.hostname != hostname)
@@ -773,7 +800,10 @@ async fn launch_rdp(host: Host) -> Result<(), String> {
             "Parsed credentials - Domain: '{}', Username: '{}'",
             domain, username
         ),
-        None,
+        Some(&format!(
+            "Domain: '{}', Username: '{}', Password length: {}",
+            domain, username, credentials.password.len()
+        )),
     );
 
     // If per-host credentials don't exist, we need to save the global credentials to TERMSRV/{hostname}
@@ -868,9 +898,16 @@ async fn launch_rdp(host: Host) -> Result<(), String> {
     // Get AppData\Roaming directory and create QuickRDP\Connections folder
     let appdata_dir =
         std::env::var("APPDATA").map_err(|_| "Failed to get APPDATA directory".to_string())?;
-    let connections_dir = PathBuf::from(appdata_dir)
+    let connections_dir = PathBuf::from(&appdata_dir)
         .join("QuickRDP")
         .join("Connections");
+
+    debug_log(
+        "DEBUG",
+        "RDP_LAUNCH",
+        &format!("Connections directory: {:?}", connections_dir),
+        Some(&format!("AppData directory: {}", appdata_dir)),
+    );
 
     // Create directory if it doesn't exist
     std::fs::create_dir_all(&connections_dir)
@@ -936,7 +973,11 @@ cert ignore:i:1\r\n",
         "INFO",
         "RDP_LAUNCH",
         &format!("Writing RDP file to: {:?}", rdp_path),
-        None,
+        Some(&format!(
+            "RDP content length: {} bytes, File: {:?}",
+            rdp_content.len(),
+            rdp_path
+        )),
     );
 
     // Write the RDP file with explicit UTF-8 encoding
@@ -963,7 +1004,12 @@ cert ignore:i:1\r\n",
 
     // Launch RDP file using Windows ShellExecuteW API
     // Opening the .rdp file directly (like double-clicking in Explorer)
-    debug_log("INFO", "RDP_LAUNCH", "Attempting to open RDP file", None);
+    debug_log(
+        "INFO",
+        "RDP_LAUNCH",
+        "Attempting to open RDP file with ShellExecuteW",
+        Some(&format!("Target file: {:?}", rdp_path)),
+    );
 
     unsafe {
         let operation = HSTRING::from("open");
@@ -994,7 +1040,6 @@ cert ignore:i:1\r\n",
         }
     }
 
-    log_to_file(&format!("Launched RDP connection to {}", host.hostname));
     debug_log(
         "INFO",
         "RDP_LAUNCH",
@@ -1002,7 +1047,7 @@ cert ignore:i:1\r\n",
             "Successfully launched RDP connection to {} using file: {:?}",
             host.hostname, rdp_path
         ),
-        None,
+        Some(&format!("RDP client invoked for hostname: {}", host.hostname)),
     );
 
     // Save to recent connections
@@ -1028,37 +1073,6 @@ cert ignore:i:1\r\n",
     Ok(())
 }
 
-fn log_to_file(message: &str) {
-    // Only log if debug mode is enabled
-    let debug_enabled = DEBUG_MODE.lock().map(|flag| *flag).unwrap_or(false);
-
-    if !debug_enabled {
-        return;
-    }
-
-    // Use AppData\Roaming\QuickRDP for reliable write permissions
-    let log_file = if let Ok(appdata_dir) = std::env::var("APPDATA") {
-        let quickrdp_dir = PathBuf::from(appdata_dir).join("QuickRDP");
-        // Create directory if it doesn't exist
-        let _ = std::fs::create_dir_all(&quickrdp_dir);
-        quickrdp_dir.join("QuickRDP.log")
-    } else {
-        // Fallback to current directory if APPDATA not available
-        PathBuf::from("QuickRDP.log")
-    };
-
-    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(log_file) {
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-
-        if let Err(e) = writeln!(file, "[{}] {}", timestamp, message) {
-            eprintln!("Failed to write to log file: {}", e);
-        }
-    }
-}
-
 fn debug_log(level: &str, category: &str, message: &str, error_details: Option<&str>) {
     let debug_enabled = DEBUG_MODE.lock().map(|flag| *flag).unwrap_or(false);
 
@@ -1071,19 +1085,11 @@ fn debug_log(level: &str, category: &str, message: &str, error_details: Option<&
         let quickrdp_dir = PathBuf::from(appdata_dir).join("QuickRDP");
         // Create directory if it doesn't exist
         let _ = std::fs::create_dir_all(&quickrdp_dir);
-        quickrdp_dir.join("QuickRDP_Debug_Log.txt")
+        quickrdp_dir.join("QuickRDP_Debug.log")
     } else {
         // Fallback to current directory if APPDATA not available
-        PathBuf::from("QuickRDP_Debug_Log.txt")
+        PathBuf::from("QuickRDP_Debug.log")
     };
-
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_secs();
-
-    // Format timestamp as readable date/time
-    let datetime = format!("{}", timestamp);
 
     // Check if file is new (to add header)
     let is_new_file = !log_file.exists();
@@ -1091,82 +1097,156 @@ fn debug_log(level: &str, category: &str, message: &str, error_details: Option<&
     if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(&log_file) {
         // Write header if this is a new file
         if is_new_file {
-            let _ = writeln!(file, "========================================");
+            let _ = writeln!(file, "{}", "=".repeat(80));
             let _ = writeln!(file, "QuickRDP Debug Log");
-            let _ = writeln!(file, "========================================");
-            let _ = writeln!(
-                file,
-                "This file contains detailed error logs and debugging information."
-            );
-            let _ = writeln!(
-                file,
-                "Generated when running QuickRDP with --debug or --debug-log argument."
-            );
+            let _ = writeln!(file, "{}", "=".repeat(80));
+            let _ = writeln!(file, "This file contains detailed application logs and debugging information.");
+            let _ = writeln!(file, "Generated when running QuickRDP with --debug or --debug-log argument.");
             let _ = writeln!(file, "");
             let _ = writeln!(file, "To enable debug logging, run: QuickRDP.exe --debug");
             let _ = writeln!(file, "");
-            let _ = writeln!(file, "========================================");
+            let _ = writeln!(file, "Log Levels:");
+            let _ = writeln!(file, "  - INFO:  General informational messages");
+            let _ = writeln!(file, "  - WARN:  Warning messages that may require attention");
+            let _ = writeln!(file, "  - ERROR: Error messages indicating failures");
+            let _ = writeln!(file, "  - DEBUG: Detailed debugging information");
+            let _ = writeln!(file, "");
+            let _ = writeln!(file, "{}", "=".repeat(80));
             let _ = writeln!(file, "");
         }
-        let mut log_entry = format!("\n[{}] [{}] [{}] {}\n", datetime, level, category, message);
+
+        // Format timestamp as human-readable date/time
+        use chrono::Local;
+        let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+
+        // Format log level with color indicators (using text symbols)
+        let level_indicator = match level {
+            "ERROR" => "[!]",
+            "WARN" => "[*]",
+            "INFO" => "[i]",
+            "DEBUG" => "[d]",
+            _ => "[?]",
+        };
+
+        // Build the log entry with improved formatting
+        let mut log_entry = format!("\n{} {} [{:8}] [{}]\n", timestamp, level_indicator, level, category);
+        log_entry.push_str(&format!("Message: {}\n", message));
 
         if let Some(details) = error_details {
-            log_entry.push_str(&format!("  Details: {}\n", details));
+            log_entry.push_str(&format!("Details: {}\n", details));
+        }
+
+        // Add context information based on category
+        match category {
+            "RDP_LAUNCH" => {
+                if let Ok(appdata_dir) = std::env::var("APPDATA") {
+                    let connections_dir = PathBuf::from(appdata_dir).join("QuickRDP").join("Connections");
+                    log_entry.push_str(&format!("RDP Files Directory: {:?}\n", connections_dir));
+                }
+            }
+            "CREDENTIALS" => {
+                log_entry.push_str("Credential Storage: Windows Credential Manager\n");
+            }
+            "LDAP_CONNECTION" | "LDAP_BIND" | "LDAP_SEARCH" => {
+                log_entry.push_str("LDAP Port: 389\n");
+            }
+            _ => {}
         }
 
         // Add possible reasons for errors
         if level == "ERROR" {
-            log_entry.push_str(&format!("  Possible Reasons:\n"));
+            log_entry.push_str("\nPossible Causes:\n");
             match category {
                 "LDAP_CONNECTION" => {
-                    log_entry
-                        .push_str("    - LDAP server is not reachable or incorrect server name\n");
-                    log_entry.push_str("    - Port 389 is blocked by firewall\n");
-                    log_entry.push_str("    - Network connectivity issues\n");
-                    log_entry.push_str("    - DNS resolution failure for server name\n");
+                    log_entry.push_str("  • LDAP server is not reachable or incorrect server name\n");
+                    log_entry.push_str("  • Port 389 is blocked by firewall\n");
+                    log_entry.push_str("  • Network connectivity issues\n");
+                    log_entry.push_str("  • DNS resolution failure for server name\n");
+                    log_entry.push_str("\nTroubleshooting Steps:\n");
+                    log_entry.push_str("  1. Verify server name is correct\n");
+                    log_entry.push_str("  2. Test network connectivity: ping <server>\n");
+                    log_entry.push_str("  3. Check firewall rules for port 389\n");
+                    log_entry.push_str("  4. Verify DNS resolution: nslookup <server>\n");
                 }
                 "LDAP_BIND" => {
-                    log_entry
-                        .push_str("    - Anonymous bind is disabled on the domain controller\n");
-                    log_entry.push_str("    - Invalid credentials (username or password)\n");
-                    log_entry.push_str("    - Account is locked or disabled\n");
-                    log_entry.push_str("    - Username format is incorrect (try DOMAIN\\username or username@domain.com)\n");
-                    log_entry.push_str("    - Insufficient permissions for LDAP queries\n");
+                    log_entry.push_str("  • Invalid credentials (username or password)\n");
+                    log_entry.push_str("  • Account is locked or disabled\n");
+                    log_entry.push_str("  • Username format is incorrect\n");
+                    log_entry.push_str("  • Insufficient permissions for LDAP queries\n");
+                    log_entry.push_str("  • Anonymous bind is disabled on the domain controller\n");
+                    log_entry.push_str("\nTroubleshooting Steps:\n");
+                    log_entry.push_str("  1. Verify credentials are correct\n");
+                    log_entry.push_str("  2. Try different username formats: DOMAIN\\username or username@domain.com\n");
+                    log_entry.push_str("  3. Check if account is locked or disabled in Active Directory\n");
+                    log_entry.push_str("  4. Verify account has permission to query AD\n");
                 }
                 "LDAP_SEARCH" => {
-                    log_entry.push_str("    - Base DN is incorrect or domain name is wrong\n");
-                    log_entry.push_str("    - LDAP filter syntax error\n");
-                    log_entry.push_str("    - Insufficient permissions to search the directory\n");
-                    log_entry.push_str("    - No Windows Server computers found in the domain\n");
-                    log_entry.push_str("    - Connection was lost during search\n");
+                    log_entry.push_str("  • Base DN is incorrect or domain name is wrong\n");
+                    log_entry.push_str("  • LDAP filter syntax error\n");
+                    log_entry.push_str("  • Insufficient permissions to search the directory\n");
+                    log_entry.push_str("  • No Windows Server computers found in the domain\n");
+                    log_entry.push_str("  • Connection was lost during search\n");
+                    log_entry.push_str("\nTroubleshooting Steps:\n");
+                    log_entry.push_str("  1. Verify domain name is correct\n");
+                    log_entry.push_str("  2. Check LDAP filter syntax\n");
+                    log_entry.push_str("  3. Verify account has read permissions on computer objects\n");
                 }
                 "CREDENTIALS" => {
-                    log_entry.push_str("    - Windows Credential Manager access denied\n");
-                    log_entry.push_str("    - Credential storage is corrupted\n");
-                    log_entry.push_str("    - Insufficient permissions to access credentials\n");
+                    log_entry.push_str("  • Windows Credential Manager access denied\n");
+                    log_entry.push_str("  • Credential storage is corrupted\n");
+                    log_entry.push_str("  • Insufficient permissions to access credentials\n");
+                    log_entry.push_str("\nTroubleshooting Steps:\n");
+                    log_entry.push_str("  1. Run application as administrator\n");
+                    log_entry.push_str("  2. Check Windows Credential Manager (Control Panel > Credential Manager)\n");
+                    log_entry.push_str("  3. Try removing and re-adding credentials\n");
                 }
                 "RDP_LAUNCH" => {
-                    log_entry.push_str("    - mstsc.exe is not available or corrupted\n");
-                    log_entry
-                        .push_str("    - RDP file creation failed (permissions or disk space)\n");
-                    log_entry.push_str("    - Temporary directory is not accessible\n");
+                    log_entry.push_str("  • mstsc.exe (RDP client) is not available or corrupted\n");
+                    log_entry.push_str("  • RDP file creation failed (permissions or disk space)\n");
+                    log_entry.push_str("  • RDP file directory is not accessible\n");
+                    log_entry.push_str("  • Malformed RDP file content\n");
+                    log_entry.push_str("\nTroubleshooting Steps:\n");
+                    log_entry.push_str("  1. Verify mstsc.exe exists in System32\n");
+                    log_entry.push_str("  2. Check disk space in AppData folder\n");
+                    log_entry.push_str("  3. Verify file permissions in %APPDATA%\\QuickRDP\\Connections\n");
+                    log_entry.push_str("  4. Try running as administrator\n");
                 }
                 "CSV_OPERATIONS" => {
-                    log_entry.push_str("    - File permissions issue\n");
-                    log_entry.push_str("    - Disk space is full\n");
-                    log_entry.push_str("    - File is locked by another process\n");
-                    log_entry.push_str("    - Invalid CSV format or corrupted file\n");
+                    log_entry.push_str("  • File permissions issue\n");
+                    log_entry.push_str("  • Disk space is full\n");
+                    log_entry.push_str("  • File is locked by another process\n");
+                    log_entry.push_str("  • Invalid CSV format or corrupted file\n");
+                    log_entry.push_str("\nTroubleshooting Steps:\n");
+                    log_entry.push_str("  1. Close any programs that may have hosts.csv open\n");
+                    log_entry.push_str("  2. Check disk space\n");
+                    log_entry.push_str("  3. Verify file permissions\n");
+                    log_entry.push_str("  4. Check if antivirus is blocking file access\n");
+                }
+                "HOST_CREDENTIALS" => {
+                    log_entry.push_str("  • Failed to save/retrieve per-host credentials\n");
+                    log_entry.push_str("  • Credential format is invalid\n");
+                    log_entry.push_str("  • Permission denied\n");
+                    log_entry.push_str("\nTroubleshooting Steps:\n");
+                    log_entry.push_str("  1. Check Windows Credential Manager for TERMSRV/* entries\n");
+                    log_entry.push_str("  2. Try running as administrator\n");
+                    log_entry.push_str("  3. Verify hostname is valid\n");
                 }
                 _ => {
-                    log_entry.push_str("    - Check system logs for more details\n");
-                    log_entry.push_str("    - Verify application permissions\n");
+                    log_entry.push_str("  • Check system event logs for more details\n");
+                    log_entry.push_str("  • Verify application has necessary permissions\n");
+                    log_entry.push_str("  • Try running as administrator\n");
                 }
             }
         }
 
-        log_entry.push_str("  ---\n");
+        // Add warning context
+        if level == "WARN" {
+            log_entry.push_str("\nRecommendation: This warning may not prevent operation but should be investigated.\n");
+        }
 
-        if let Err(e) = writeln!(file, "{}", log_entry) {
+        log_entry.push_str(&format!("{}\n", "-".repeat(80)));
+
+        if let Err(e) = write!(file, "{}", log_entry) {
             eprintln!("Failed to write to debug log file: {}", e);
         }
     } else {
@@ -1236,10 +1316,6 @@ async fn scan_domain(
 }
 
 async fn scan_domain_ldap(domain: String, server: String) -> Result<String, String> {
-    log_to_file(&format!(
-        "Starting LDAP scan for domain: {} on server: {}",
-        domain, server
-    ));
     debug_log(
         "INFO",
         "LDAP_SCAN",
@@ -1247,7 +1323,7 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
             "Starting LDAP scan for domain: {} on server: {}",
             domain, server
         ),
-        None,
+        Some(&format!("Domain: {}, Server: {}", domain, server)),
     );
 
     // Validate inputs
@@ -1313,7 +1389,6 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
 
     // Corporate AD environments require authenticated bind for searches
     // Skip anonymous bind and go straight to authenticated bind
-    log_to_file("Retrieving stored credentials for LDAP authentication...");
     debug_log(
         "INFO",
         "LDAP_BIND",
@@ -1362,10 +1437,6 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
         format!("{}@{}", credentials.username, domain)
     };
 
-    log_to_file(&format!(
-        "Attempting authenticated LDAP bind with username: {}",
-        bind_dn
-    ));
     debug_log(
         "INFO",
         "LDAP_BIND",
@@ -1373,16 +1444,12 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
             "Attempting authenticated LDAP bind with username: {}",
             bind_dn
         ),
-        None,
+        Some(&format!("Bind DN: {}", bind_dn)),
     );
 
     // Perform authenticated bind
     match ldap.simple_bind(&bind_dn, &credentials.password).await {
         Ok(result) => {
-            log_to_file(&format!(
-                "Authenticated LDAP bind successful. Result: {:?}",
-                result
-            ));
             debug_log(
                 "INFO",
                 "LDAP_BIND",
@@ -1405,12 +1472,11 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
         .collect::<Vec<String>>()
         .join(",");
 
-    log_to_file(&format!("Searching base DN: {}", base_dn));
     debug_log(
         "INFO",
         "LDAP_SEARCH",
         &format!("Searching base DN: {}", base_dn),
-        None,
+        Some(&format!("Base DN: {}, Filter: (&(objectClass=computer)(operatingSystem=Windows Server*)(dNSHostName=*))", base_dn)),
     );
 
     // Search for Windows Server computers
@@ -1462,7 +1528,12 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
         }
     };
 
-    log_to_file(&format!("Found {} entries from LDAP", rs.len()));
+    debug_log(
+        "INFO",
+        "LDAP_SEARCH",
+        &format!("Found {} entries from LDAP", rs.len()),
+        Some(&format!("Entry count: {}", rs.len())),
+    );
 
     // Parse results
     let mut hosts = Vec::new();
@@ -1480,12 +1551,11 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
                     .map(|s| s.to_string())
                     .unwrap_or_default();
 
-                log_to_file(&format!("Found host: {} - {}", hostname, description));
                 debug_log(
                     "INFO",
                     "LDAP_SEARCH",
                     &format!("Found host: {} - {}", hostname, description),
-                    None,
+                    Some(&format!("Hostname: {}, Description: {}", hostname, description)),
                 );
 
                 hosts.push(Host {
@@ -1577,7 +1647,6 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
         return Err(error);
     }
 
-    log_to_file(&format!("Successfully wrote {} hosts to CSV", hosts.len()));
     debug_log(
         "INFO",
         "LDAP_SCAN",
@@ -1585,7 +1654,7 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
             "Successfully completed scan and wrote {} hosts to CSV",
             hosts.len()
         ),
-        None,
+        Some(&format!("Total hosts written: {}", hosts.len())),
     );
 
     Ok(format!(
@@ -2077,7 +2146,12 @@ fn enable_autostart() -> Result<(), String> {
 
         let exe_path_str = exe_path.to_string_lossy().to_string();
 
-        log_to_file(&format!("Enabling autostart with path: {}", exe_path_str));
+        debug_log(
+            "INFO",
+            "AUTOSTART",
+            &format!("Enabling autostart with path: {}", exe_path_str),
+            Some(&format!("Executable path: {}", exe_path_str)),
+        );
 
         let key_path: Vec<u16> = OsStr::new(REGISTRY_RUN_KEY)
             .encode_wide()
@@ -2119,14 +2193,24 @@ fn enable_autostart() -> Result<(), String> {
 
         result.map_err(|e| format!("Failed to set registry value: {:?}", e))?;
 
-        log_to_file("Autostart enabled successfully");
+        debug_log(
+            "INFO",
+            "AUTOSTART",
+            "Autostart enabled successfully",
+            Some(&format!("Registry value set for {}", APP_NAME)),
+        );
         Ok(())
     }
 }
 
 fn disable_autostart() -> Result<(), String> {
     unsafe {
-        log_to_file("Disabling autostart");
+        debug_log(
+            "INFO",
+            "AUTOSTART",
+            "Disabling autostart",
+            None,
+        );
 
         let key_path: Vec<u16> = OsStr::new(REGISTRY_RUN_KEY)
             .encode_wide()
@@ -2157,7 +2241,12 @@ fn disable_autostart() -> Result<(), String> {
 
         result.map_err(|e| format!("Failed to delete registry value: {:?}", e))?;
 
-        log_to_file("Autostart disabled successfully");
+        debug_log(
+            "INFO",
+            "AUTOSTART",
+            "Autostart disabled successfully",
+            Some(&format!("Registry value deleted for {}", APP_NAME)),
+        );
         Ok(())
     }
 }
@@ -2388,7 +2477,7 @@ pub fn run() {
         if let Ok(appdata_dir) = std::env::var("APPDATA") {
             let log_file = PathBuf::from(appdata_dir)
                 .join("QuickRDP")
-                .join("QuickRDP_Debug_Log.txt");
+                .join("QuickRDP_Debug.log");
             eprintln!("[QuickRDP] Log file will be written to: {:?}", log_file);
         } else {
             eprintln!("[QuickRDP] WARNING: APPDATA not found, using current directory for log");
@@ -2399,14 +2488,28 @@ pub fn run() {
             "INFO",
             "SYSTEM",
             "Debug logging enabled via command line argument",
+            Some(&format!("Command line arguments: {:?}", args)),
+        );
+        debug_log(
+            "INFO",
+            "SYSTEM",
+            &format!("Application version: {}", env!("CARGO_PKG_VERSION")),
             None,
         );
         debug_log(
             "INFO",
             "SYSTEM",
-            &format!("Application started with args: {:?}", args),
-            None,
+            &format!("Operating System: {}", std::env::consts::OS),
+            Some(&format!("Architecture: {}", std::env::consts::ARCH)),
         );
+        if let Ok(current_dir) = std::env::current_dir() {
+            debug_log(
+                "INFO",
+                "SYSTEM",
+                &format!("Working directory: {:?}", current_dir),
+                None,
+            );
+        }
         eprintln!("[QuickRDP] Debug log initialized");
     } else {
         eprintln!("[QuickRDP] Starting without debug mode. Use --debug to enable logging.");
