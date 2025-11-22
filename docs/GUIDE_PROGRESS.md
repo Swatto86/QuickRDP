@@ -121,31 +121,36 @@
 
 ---
 
-### ⬜ Chapter 7: Multi-Window Applications
-**Pages: 12-15 | Status: Not Started**
-- [ ] 7.1 Window Configuration in tauri.conf.json
-- [ ] 7.2 Creating Multiple Window Definitions
-- [ ] 7.3 Window Management from Rust
-- [ ] 7.4 Window State Management
-- [ ] 7.5 Inter-Window Communication
-- [ ] 7.6 Window Focus and Visibility
-- [ ] 7.7 Modal Dialogs and Popups
-- [ ] 7.8 QuickRDP Multi-Window System (Login, Main, Hosts, About, Error)
+### ✅ Chapter 7: Multi-Window Applications
+**Pages: 48 | Status: COMPLETED - November 22, 2025**
+- [x] 7.1 Window Configuration in tauri.conf.json
+- [x] 7.2 Window Types and Design Patterns
+- [x] 7.3 Window Management from Rust
+- [x] 7.4 Window Lifecycle and State Management
+- [x] 7.5 Inter-Window Communication
+- [x] 7.6 QuickRDP Multi-Window System Analysis
+- [x] 7.7 Best Practices for Multi-Window Applications
+- [x] 7.8 Practice Exercises with Solutions
 **Learning Outcomes:** Build complex multi-window applications
+**File:** `docs/Chapter_07_Multi_Window_Applications.md`
 
 ---
 
-### ⬜ Chapter 8: State Management and Data Flow
-**Pages: 10-12 | Status: Not Started**
-- [ ] 8.1 Frontend State Patterns
-- [ ] 8.2 Global Variables and Storage
-- [ ] 8.3 Event-Driven Architecture
-- [ ] 8.4 Reactive Data Updates
-- [ ] 8.5 Form Validation and Handling
-- [ ] 8.6 Search and Filter Implementations
-- [ ] 8.7 Real-time UI Updates
-- [ ] 8.8 QuickRDP State Management Analysis
+### ✅ Chapter 8: State Management and Data Flow
+**Pages: 52 | Status: COMPLETED - November 22, 2025**
+- [x] 8.1 Understanding State in Tauri Applications
+- [x] 8.2 Client-Side State Management
+- [x] 8.3 Real-Time Search and Filtering
+- [x] 8.4 Form Validation and Handling
+- [x] 8.5 State Synchronization Across Windows
+- [x] 8.6 Managing Button and UI States
+- [x] 8.7 Auto-Close Timer Pattern
+- [x] 8.8 Toast Notifications for User Feedback
+- [x] 8.9 QuickRDP State Management Architecture
+- [x] 8.10 Performance Optimization Patterns
+- [x] 8.11 Practice Exercises with Solutions
 **Learning Outcomes:** Manage application state effectively
+**File:** `docs/Chapter_08_State_Management_and_Data_Flow.md`
 
 ---
 
@@ -380,15 +385,15 @@
 ## Completion Statistics
 
 **Total Chapters:** 20  
-**Completed:** 6  
+**Completed:** 8  
 **In Progress:** 0  
-**Not Started:** 14  
+**Not Started:** 12  
 
 **Total Appendices:** 4  
 **Completed:** 0
 
-**Overall Progress:** 30% Complete (6/20 chapters)
-**Total Pages Written:** 206 pages
+**Overall Progress:** 40% Complete (8/20 chapters)
+**Total Pages Written:** 306 pages
 
 **Estimated Completion:** [To be determined]
 **Started:** November 22, 2025
@@ -404,8 +409,10 @@
 4. ✅ ~~Chapter 4: Your First Tauri Application~~
 5. ✅ ~~Chapter 5: TypeScript and Frontend Basics~~
 6. ✅ ~~Chapter 6: Styling with Tailwind CSS and DaisyUI~~
-7. ⬜ Begin Chapter 7: Multi-Window Applications
-8. ⬜ Create complex multi-window systems
+7. ✅ ~~Chapter 7: Multi-Window Applications~~
+8. ✅ ~~Chapter 8: State Management and Data Flow~~
+9. ⬜ Begin Chapter 9: Tauri Commands - The Bridge
+10. ⬜ Deep dive into command patterns and best practices
 
 ---
 
