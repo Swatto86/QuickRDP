@@ -1961,6 +1961,41 @@ async fn reset_application() -> Result<String, String> {
         }
     }
 
+    // 5. Delete recent_connections.json
+    if let Ok(appdata_dir) = std::env::var("APPDATA") {
+        let recent_file = PathBuf::from(appdata_dir)
+            .join("QuickRDP")
+            .join("recent_connections.json");
+
+        if recent_file.exists() {
+            match std::fs::remove_file(&recent_file) {
+                Ok(_) => {
+                    report.push_str("✓ Deleted recent connections history\n");
+                    debug_log(
+                        "INFO",
+                        "RESET",
+                        "Deleted recent_connections.json",
+                        None,
+                    );
+                }
+                Err(e) => {
+                    report.push_str(&format!(
+                        "✗ Failed to delete recent connections: {}\n",
+                        e
+                    ));
+                    debug_log(
+                        "ERROR",
+                        "RESET",
+                        "Failed to delete recent_connections.json",
+                        Some(&format!("{}", e)),
+                    );
+                }
+            }
+        } else {
+            report.push_str("✓ No recent connections to delete\n");
+        }
+    }
+
     report.push_str("\n=== Reset Complete ===\n");
     report.push_str("The application has been reset to its initial state.\n");
     report.push_str("Please restart the application.\n");

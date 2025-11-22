@@ -113,11 +113,29 @@ Logs are written to:
 - `%APPDATA%\Roaming\QuickRDP\QuickRDP_Debug_Log.txt`
 
 ### Application Reset
-Press **Ctrl+Shift+Alt+R** to completely reset the application:
-- Deletes all stored credentials
-- Removes all RDP connection files
-- Clears the hosts list
-- Returns app to initial state
+Press **Ctrl+Shift+Alt+R** from any window (Login, Main, Hosts Management, or About) to completely reset the application:
+
+**What Gets Deleted:**
+- ✓ Global QuickRDP credentials (from Windows Credential Manager)
+- ✓ All per-host RDP credentials (TERMSRV/* entries)
+- ✓ All RDP connection files (*.rdp files in AppData)
+- ✓ Complete hosts list (hosts.csv)
+- ✓ Recent connection history
+
+**Important Notes:**
+- This action is **irreversible** - all data will be permanently deleted
+- You will be prompted twice for confirmation before the reset proceeds
+- The reset works from **all windows** in the application for convenience
+- After reset, you'll return to the initial "Enter Credentials" screen
+- It's recommended to restart the application after a reset
+- Debug logs (if enabled) will document the reset operation
+
+**When to Use Reset:**
+- Troubleshooting credential or connection issues
+- Preparing to hand off the system to another user
+- Starting fresh with a clean configuration
+- Testing the application setup process
+- Security requirement to clear all stored data
 
 ## Technical Details
 
@@ -149,7 +167,10 @@ QuickRDP-main/
 - **Credentials**: Windows Credential Manager (`TERMSRV/*` and `QuickRDP`)
 - **Hosts**: CSV file at `src-tauri/hosts.csv`
 - **RDP Files**: `%APPDATA%\Roaming\QuickRDP\Connections\`
+- **Recent Connections**: `%APPDATA%\Roaming\QuickRDP\recent_connections.json`
 - **Logs**: `%APPDATA%\Roaming\QuickRDP\` (when debug enabled)
+
+**Note**: All of the above can be completely cleared using the application reset feature (Ctrl+Shift+Alt+R from any window).
 
 ## Development
 
@@ -197,7 +218,14 @@ npm run tauri build
 - Check Windows Event Viewer for errors
 - Verify all dependencies are installed
 - Try running with `--debug` flag
-- Reset application with Ctrl+Shift+Alt+R
+- Reset application with Ctrl+Shift+Alt+R (works from any window)
+- If reset doesn't help, manually delete: `%APPDATA%\Roaming\QuickRDP` folder
+
+### Credential or Connection Issues
+- Verify credentials are correct and not expired
+- Try resetting the application (Ctrl+Shift+Alt+R) to clear all stored credentials
+- Re-enter credentials after reset
+- Check debug logs for detailed error information
 
 ## License
 

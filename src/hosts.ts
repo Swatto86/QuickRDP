@@ -57,7 +57,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         'This will permanently delete:\n' +
         '• All saved credentials\n' +
         '• All RDP connection files\n' +
-        '• All saved hosts\n\n' +
+        '• All saved hosts\n' +
+        '• Recent connection history\n\n' +
         'This action CANNOT be undone!\n\n' +
         'Are you sure you want to continue?'
       );
