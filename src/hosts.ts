@@ -15,6 +15,21 @@ interface StoredCredentials {
 let hosts: Host[] = [];
 let filteredHosts: Host[] = [];
 
+// Function to show errors in the dedicated error window
+async function showError(message: string, category?: string, details?: string) {
+  try {
+    await invoke("show_error", {
+      message,
+      category: category || "ERROR",
+      details: details || undefined,
+    });
+  } catch (err) {
+    console.error("Failed to show error window:", err);
+    // Fallback to console
+    console.error(`[${category || "ERROR"}] ${message}`, details);
+  }
+}
+
 async function initializeTheme() {
   let defaultTheme = 'dark';
   
@@ -119,6 +134,11 @@ function setupEventListeners() {
       (document.getElementById("hostModal") as HTMLDialogElement).close();
     } catch (error) {
       console.error("Failed to save host:", error);
+      await showError(
+        "Failed to save host to database",
+        "CSV_OPERATIONS",
+        String(error)
+      );
     }
   });
 
@@ -150,11 +170,21 @@ function setupEventListeners() {
     
     if (!isValidDomain(domain)) {
       showToast("Please enter a valid domain name (e.g., contoso.com)", 'error');
+      await showError(
+        "Please enter a valid domain name (e.g., contoso.com)",
+        "VALIDATION",
+        "The domain name format is invalid. It should be like contoso.com or example.org"
+      );
       return;
     }
 
     if (!isValidServerName(server, domain)) {
       showToast(`Server must be a valid FQDN ending with .${domain} (e.g., dc01.${domain})`, 'error');
+      await showError(
+        `Server must be a valid FQDN ending with .${domain} (e.g., dc01.${domain})`,
+        "VALIDATION",
+        "The server name must be a fully qualified domain name that ends with the specified domain"
+      );
       return;
     }
     
@@ -175,6 +205,11 @@ function setupEventListeners() {
     } catch (error) {
       console.error("Failed to scan domain:", error);
       showToast(`Failed to scan domain: ${error}`, 'error');
+      await showError(
+        "Failed to scan Active Directory domain",
+        "LDAP_SCAN",
+        String(error)
+      );
     } finally {
       submitButton.disabled = false;
       submitButton.classList.remove('btn-disabled');
@@ -210,6 +245,11 @@ async function loadHosts() {
     renderHosts();
   } catch (error) {
     console.error("Failed to load hosts:", error);
+    await showError(
+      "Failed to load hosts from database",
+      "CSV_OPERATIONS",
+      String(error)
+    );
   }
 }
 
@@ -274,6 +314,11 @@ window.deleteHost = async (hostname: string) => {
     await loadHosts();
   } catch (error) {
     console.error("Failed to delete host:", error);
+    await showError(
+      "Failed to delete host from database",
+      "CSV_OPERATIONS",
+      String(error)
+    );
   }
 };
 
@@ -337,9 +382,14 @@ function isValidServerName(server: string, domain: string): boolean {
 }
 
 function showToast(message: string, type: 'success' | 'error' = 'success') {
+  // Don't show error toasts as they will be handled by the error window
+  if (type === 'error') {
+    return;
+  }
+  
   const toastContainer = document.getElementById('toastContainer')!;
   const toast = document.createElement('div');
-  toast.className = `alert ${type === 'success' ? 'alert-success' : 'alert-error'} mb-2`;
+  toast.className = `alert alert-success mb-2`;
   toast.innerHTML = `
     <span>${message}</span>
   `;
@@ -400,6 +450,11 @@ window.saveHostCredentials = async (hostname: string) => {
             } catch (error) {
                 console.error("Failed to save host credentials:", error);
                 showToast(`Failed to save credentials: ${error}`, 'error');
+                await showError(
+                    "Failed to save credentials for host",
+                    "HOST_CREDENTIALS",
+                    String(error)
+                );
             }
         };
 
@@ -411,6 +466,11 @@ window.saveHostCredentials = async (hostname: string) => {
     } catch (error) {
         console.error("Failed to manage host credentials:", error);
         showToast(`Failed to manage credentials: ${error}`, 'error');
+        await showError(
+            "Failed to open credentials management dialog",
+            "HOST_CREDENTIALS",
+            String(error)
+        );
     }
 };
 
@@ -424,6 +484,11 @@ async function deleteAllHosts() {
   } catch (error) {
     console.error("Failed to delete all hosts:", error);
     showToast(`Failed to delete all hosts: ${error}`, 'error');
+    await showError(
+      "Failed to delete all hosts",
+      "CSV_OPERATIONS",
+      String(error)
+    );
   }
 }
 

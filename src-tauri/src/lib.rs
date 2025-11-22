@@ -14,6 +14,51 @@ fn show_about(app_handle: tauri::AppHandle) -> Result<(), String> {
     }
 }
 
+#[derive(Clone, serde::Serialize)]
+struct ErrorPayload {
+    message: String,
+    timestamp: String,
+    category: Option<String>,
+    details: Option<String>,
+}
+
+#[tauri::command]
+fn show_error(
+    app_handle: tauri::AppHandle,
+    message: String,
+    category: Option<String>,
+    details: Option<String>,
+) -> Result<(), String> {
+    use chrono::Local;
+    
+    let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    
+    let payload = ErrorPayload {
+        message,
+        timestamp,
+        category,
+        details,
+    };
+    
+    debug_log(
+        "INFO",
+        "ERROR_WINDOW",
+        &format!("Showing error in error window: {}", payload.message),
+        payload.details.as_deref(),
+    );
+    
+    // Emit the error event to the error window (this will work even if window is hidden)
+    if let Some(error_window) = app_handle.get_webview_window("error") {
+        let _ = error_window.emit("show-error", &payload);
+        // Always show and focus the window when a new error occurs
+        error_window.show().map_err(|e| e.to_string())?;
+        error_window.unminimize().map_err(|e| e.to_string())?;
+        error_window.set_focus().map_err(|e| e.to_string())?;
+    }
+    
+    Ok(())
+}
+
 use ldap3::{LdapConnAsync, Scope, SearchEntry};
 use serde::Deserialize;
 use std::ffi::OsStr;
@@ -2588,6 +2633,18 @@ pub fn run() {
                 }
             });
 
+            // Set up close handler for error window (just hide it)
+            let app_handle = app.app_handle().clone();
+            let error_window = app.get_webview_window("error").unwrap();
+            error_window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    println!("Close requested for error window");
+                    let _ = app_handle.get_webview_window("error").unwrap().hide();
+                    // Prevent the window from being destroyed
+                    api.prevent_close();
+                }
+            });
+
             // Create the system tray
             let _tray = TrayIconBuilder::with_id("main")
                 .icon(app.default_window_icon().unwrap().clone())
@@ -2839,6 +2896,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             quit_app,
             show_about,
+            show_error,
             save_credentials,
             get_stored_credentials,
             delete_credentials,

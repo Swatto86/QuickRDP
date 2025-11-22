@@ -13,10 +13,15 @@ interface Host {
 }
 
 function showNotification(message: string, isError: boolean = false) {
+  // Don't show error notifications as they will be handled by the error window
+  if (isError) {
+    return;
+  }
+  
   const notification = document.createElement("div");
   notification.className = `
         fixed bottom-2 left-1/2 transform -translate-x-1/2
-        ${isError ? "bg-red-500" : "bg-green-500"}
+        bg-green-500
         text-white px-4 py-2 rounded-md shadow-lg
         text-center min-w-[200px] whitespace-nowrap
         text-sm
@@ -27,6 +32,21 @@ function showNotification(message: string, isError: boolean = false) {
   setTimeout(() => {
     notification.remove();
   }, 1000);
+}
+
+// Function to show errors in the dedicated error window
+async function showError(message: string, category?: string, details?: string) {
+  try {
+    await invoke("show_error", {
+      message,
+      category: category || "ERROR",
+      details: details || undefined,
+    });
+  } catch (err) {
+    console.error("Failed to show error window:", err);
+    // Fallback to console
+    console.error(`[${category || "ERROR"}] ${message}`, details);
+  }
 }
 
 // Function to update button states
@@ -321,11 +341,16 @@ async function loadAllHosts() {
         const serverList = document.querySelector("#server-list") as HTMLElement;
         if (serverList) {
             serverList.innerHTML = `
-                <div class="text-center text-error p-4">
+                <div class="text-center text-base-content/60 p-4">
                     Failed to load hosts
                 </div>
             `;
         }
+        await showError(
+            "Failed to load hosts list",
+            "CSV_OPERATIONS",
+            String(err)
+        );
     }
 }
 
@@ -438,6 +463,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                 } catch (err) {
                     showNotification("Failed to delete credentials", true);
                     console.error("Error:", err);
+                    await showError(
+                        "Failed to delete stored credentials",
+                        "CREDENTIALS",
+                        String(err)
+                    );
                 }
             });
         }
@@ -481,6 +511,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             } catch (err) {
                 showNotification("Failed to save credentials", true);
                 console.error("Error:", err);
+                await showError(
+                    "Failed to save credentials to Windows Credential Manager",
+                    "CREDENTIALS",
+                    String(err)
+                );
             }
         });
     }

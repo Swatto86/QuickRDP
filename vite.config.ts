@@ -39,7 +39,8 @@ export default defineConfig(async () => ({
         main: "./main.html",
         index: "./index.html",
         hosts: "./hosts.html",
-        about: "./about.html"
+        about: "./about.html",
+        error: "./error.html"
       },
     },
   },

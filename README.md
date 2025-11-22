@@ -108,9 +108,23 @@ Enable detailed logging for troubleshooting:
 QuickRDP.exe --debug
 ```
 
-Logs are written to:
-- `%APPDATA%\Roaming\QuickRDP\QuickRDP.log`
-- `%APPDATA%\Roaming\QuickRDP\QuickRDP_Debug_Log.txt`
+Debug log is written to: `%APPDATA%\Roaming\QuickRDP\QuickRDP_Debug.log`
+
+The debug log includes:
+- Human-readable timestamps for each event
+- Detailed error information with context
+- Category-specific troubleshooting steps
+- Operation traces (RDP connections, credential operations, LDAP queries, CSV operations, window lifecycle)
+- Structured log levels: ERROR (!), WARNING (*), INFO (i), DEBUG (d)
+
+### Error Display
+Errors are displayed in a dedicated, always-on-top error window that:
+- Automatically appears when errors occur
+- Maintains a scrollable list of all errors for easy review
+- Persists across window closures (errors remain until explicitly dismissed)
+- Shows timestamp, category, and detailed context for each error
+- Re-opens automatically if new errors occur after being closed
+- Works across all application windows
 
 ### Application Reset
 Press **Ctrl+Shift+Alt+R** from any window (Login, Main, Hosts Management, or About) to completely reset the application:

@@ -79,6 +79,24 @@
         "alwaysOnTop": true,
         "center": true,
         "devtools": false
+      },
+      {
+        "label": "error",
+        "width": 700,
+        "height": 500,
+        "minWidth": 500,
+        "minHeight": 400,
+        "resizable": true,
+        "title": "Error - QuickRDP",
+        "url": "error.html",
+        "transparent": false,
+        "decorations": true,
+        "visible": false,
+        "focus": true,
+        "skipTaskbar": true,
+        "alwaysOnTop": true,
+        "center": true,
+        "devtools": false
       }
     ],
     "security": {
