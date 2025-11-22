@@ -2247,10 +2247,11 @@ fn get_theme(app_handle: tauri::AppHandle) -> Result<String, String> {
 fn build_tray_menu(app: &tauri::AppHandle, current_theme: &str) -> Result<Menu<tauri::Wry>, Box<dyn std::error::Error>> {
     // Check autostart status
     let autostart_enabled = check_autostart().unwrap_or(false);
-    let autostart_text = format!(
-        "{} Autostart with Windows",
-        if autostart_enabled { "✓" } else { "✗" }
-    );
+    let autostart_text = if autostart_enabled {
+        "✓ Autostart with Windows"
+    } else {
+        "✗ Autostart with Windows"
+    };
     let autostart_item = MenuItem::with_id(
         app,
         "toggle_autostart",
@@ -2263,14 +2264,14 @@ fn build_tray_menu(app: &tauri::AppHandle, current_theme: &str) -> Result<Menu<t
     let theme_light = MenuItem::with_id(
         app,
         "theme_light",
-        format!("Light {}", if current_theme == "light" { "✓" } else { "" }),
+        if current_theme == "light" { "✓ Light" } else { "✗ Light" },
         true,
         None::<&str>,
     )?;
     let theme_dark = MenuItem::with_id(
         app,
         "theme_dark",
-        format!("Dark {}", if current_theme == "dark" { "✓" } else { "" }),
+        if current_theme == "dark" { "✓ Dark" } else { "✗ Dark" },
         true,
         None::<&str>,
     )?;
