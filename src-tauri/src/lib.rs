@@ -56,10 +56,88 @@ struct StoredCredentials {
     password: String,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 struct Host {
     hostname: String,
     description: String,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+struct RecentConnection {
+    hostname: String,
+    description: String,
+    timestamp: u64,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct RecentConnections {
+    connections: Vec<RecentConnection>,
+}
+
+impl RecentConnections {
+    fn new() -> Self {
+        Self {
+            connections: Vec::new(),
+        }
+    }
+
+    fn add_connection(&mut self, hostname: String, description: String) {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+
+        // Remove existing entry for this hostname if it exists
+        self.connections.retain(|c| c.hostname != hostname);
+
+        // Add new connection at the beginning
+        self.connections.insert(0, RecentConnection {
+            hostname,
+            description,
+            timestamp,
+        });
+
+        // Keep only the 5 most recent
+        if self.connections.len() > 5 {
+            self.connections.truncate(5);
+        }
+    }
+}
+
+fn get_recent_connections_file() -> Result<PathBuf, String> {
+    let appdata_dir = std::env::var("APPDATA")
+        .map_err(|_| "Failed to get APPDATA directory".to_string())?;
+    let quickrdp_dir = PathBuf::from(appdata_dir).join("QuickRDP");
+    std::fs::create_dir_all(&quickrdp_dir)
+        .map_err(|e| format!("Failed to create QuickRDP directory: {}", e))?;
+    Ok(quickrdp_dir.join("recent_connections.json"))
+}
+
+fn save_recent_connections(recent: &RecentConnections) -> Result<(), String> {
+    let file_path = get_recent_connections_file()?;
+    let json = serde_json::to_string_pretty(recent)
+        .map_err(|e| format!("Failed to serialize recent connections: {}", e))?;
+    std::fs::write(&file_path, json)
+        .map_err(|e| format!("Failed to write recent connections: {}", e))?;
+    Ok(())
+}
+
+fn load_recent_connections() -> Result<RecentConnections, String> {
+    let file_path = get_recent_connections_file()?;
+    if !file_path.exists() {
+        return Ok(RecentConnections::new());
+    }
+    let json = std::fs::read_to_string(&file_path)
+        .map_err(|e| format!("Failed to read recent connections: {}", e))?;
+    let recent: RecentConnections = serde_json::from_str(&json)
+        .map_err(|e| format!("Failed to parse recent connections: {}", e))?;
+    Ok(recent)
+}
+
+#[tauri::command]
+fn get_recent_connections() -> Result<Vec<RecentConnection>, String> {
+    let recent = load_recent_connections()?;
+    Ok(recent.connections)
 }
 
 #[tauri::command]
@@ -851,6 +929,12 @@ cert ignore:i:1\r\n",
         ),
         None,
     );
+
+    // Save to recent connections
+    if let Ok(mut recent) = load_recent_connections() {
+        recent.add_connection(host.hostname.clone(), host.description.clone());
+        let _ = save_recent_connections(&recent);
+    }
 
     // RDP file is now persistent in AppData\Roaming\QuickRDP\Connections
     // No cleanup needed - file can be reused for future connections
@@ -2111,13 +2195,57 @@ fn build_tray_menu(app: &tauri::AppHandle, current_theme: &str) -> Result<Menu<t
         &[&theme_light, &theme_dark],
     )?;
 
+    // Create recent connections submenu
+    let recent_connections = load_recent_connections().unwrap_or_else(|_| RecentConnections::new());
+    
+    let recent_submenu = if recent_connections.connections.is_empty() {
+        let no_recent = MenuItem::with_id(
+            app,
+            "no_recent",
+            "No recent connections",
+            false,
+            None::<&str>,
+        )?;
+        Submenu::with_items(
+            app,
+            "Recent Connections",
+            true,
+            &[&no_recent],
+        )?
+    } else {
+        // Build submenu with actual recent items
+        let items: Vec<_> = recent_connections.connections.iter().map(|conn| {
+            let label = if conn.description.is_empty() {
+                conn.hostname.clone()
+            } else {
+                format!("{} - {}", conn.hostname, conn.description)
+            };
+            let menu_id = format!("recent_{}", conn.hostname);
+            MenuItem::with_id(
+                app,
+                &menu_id,
+                &label,
+                true,
+                None::<&str>,
+            )
+        }).collect::<Result<Vec<_>, _>>()?;
+        
+        let item_refs: Vec<&dyn tauri::menu::IsMenuItem<tauri::Wry>> = items.iter().map(|item| item as &dyn tauri::menu::IsMenuItem<tauri::Wry>).collect();
+        Submenu::with_items(
+            app,
+            "Recent Connections",
+            true,
+            &item_refs,
+        )?
+    };
+
     let about_item = MenuItem::with_id(app, "about", "About QuickRDP", true, None::<&str>)?;
     let separator = PredefinedMenuItem::separator(app)?;
     let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
 
     Menu::with_items(
         app,
-        &[&autostart_item, &theme_submenu, &about_item, &separator, &quit_item],
+        &[&recent_submenu, &autostart_item, &theme_submenu, &about_item, &separator, &quit_item],
     ).map_err(|e| e.into())
 }
 
@@ -2330,43 +2458,81 @@ pub fn run() {
                         _ => {}
                     }
                 })
-                .on_menu_event(|app, event| match event.id() {
-                    id if id == "toggle_autostart" => {
-                        match toggle_autostart() {
-                            Ok(_enabled) => {
-                                // Rebuild the entire menu with updated autostart status and current theme
-                                if let Some(tray) = app.tray_by_id("main") {
-                                    let current_theme = get_theme(app.clone())
-                                        .unwrap_or_else(|_| "dark".to_string());
-                                    if let Ok(new_menu) = build_tray_menu(app, &current_theme) {
-                                        let _ = tray.set_menu(Some(new_menu));
+                .on_menu_event(|app, event| {
+                    let id_str = event.id().as_ref();
+                    
+                    // Check if it's a recent connection item
+                    if id_str.starts_with("recent_") {
+                        let hostname = id_str.strip_prefix("recent_").unwrap_or("").to_string();
+                        if !hostname.is_empty() {
+                            // Get the host details and launch RDP
+                            tauri::async_runtime::spawn(async move {
+                                // Try to get host from hosts list
+                                match get_hosts() {
+                                    Ok(hosts) => {
+                                        if let Some(host) = hosts.into_iter().find(|h| h.hostname == hostname) {
+                                            if let Err(e) = launch_rdp(host).await {
+                                                eprintln!("Failed to launch RDP to {}: {}", hostname, e);
+                                            }
+                                        } else {
+                                            // Host not in list, create a temporary host entry
+                                            let host = Host {
+                                                hostname: hostname.clone(),
+                                                description: String::new(),
+                                            };
+                                            if let Err(e) = launch_rdp(host).await {
+                                                eprintln!("Failed to launch RDP to {}: {}", hostname, e);
+                                            }
+                                        }
+                                    }
+                                    Err(e) => {
+                                        eprintln!("Failed to get hosts: {}", e);
                                     }
                                 }
+                            });
+                        }
+                        return;
+                    }
+                    
+                    // Handle other menu events
+                    match event.id() {
+                        id if id == "toggle_autostart" => {
+                            match toggle_autostart() {
+                                Ok(_enabled) => {
+                                    // Rebuild the entire menu with updated autostart status and current theme
+                                    if let Some(tray) = app.tray_by_id("main") {
+                                        let current_theme = get_theme(app.clone())
+                                            .unwrap_or_else(|_| "dark".to_string());
+                                        if let Ok(new_menu) = build_tray_menu(app, &current_theme) {
+                                            let _ = tray.set_menu(Some(new_menu));
+                                        }
+                                    }
+                                }
+                                Err(e) => {
+                                    eprintln!("Failed to toggle autostart: {}", e);
+                                }
                             }
-                            Err(e) => {
-                                eprintln!("Failed to toggle autostart: {}", e);
+                        }
+                        id if id == "theme_light" => {
+                            if let Err(e) = set_theme(app.clone(), "light".to_string()) {
+                                eprintln!("Failed to set theme to light: {}", e);
                             }
                         }
-                    }
-                    id if id == "theme_light" => {
-                        if let Err(e) = set_theme(app.clone(), "light".to_string()) {
-                            eprintln!("Failed to set theme to light: {}", e);
+                        id if id == "theme_dark" => {
+                            if let Err(e) = set_theme(app.clone(), "dark".to_string()) {
+                                eprintln!("Failed to set theme to dark: {}", e);
+                            }
                         }
-                    }
-                    id if id == "theme_dark" => {
-                        if let Err(e) = set_theme(app.clone(), "dark".to_string()) {
-                            eprintln!("Failed to set theme to dark: {}", e);
+                        id if id == "about" => {
+                            if let Err(e) = show_about(app.clone()) {
+                                eprintln!("Failed to show about window: {}", e);
+                            }
                         }
-                    }
-                    id if id == "about" => {
-                        if let Err(e) = show_about(app.clone()) {
-                            eprintln!("Failed to show about window: {}", e);
+                        id if id == "quit" => {
+                            app.exit(0);
                         }
+                        _ => {}
                     }
-                    id if id == "quit" => {
-                        app.exit(0);
-                    }
-                    _ => {}
                 })
                 .build(app)
                 .expect("Failed to build tray icon");
@@ -2474,6 +2640,7 @@ pub fn run() {
             get_windows_theme,
             set_theme,
             get_theme,
+            get_recent_connections,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
