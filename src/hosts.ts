@@ -4,6 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 interface Host {
   hostname: string;
   description: string;
+  last_connected?: string;
 }
 
 interface StoredCredentials {
@@ -231,6 +232,7 @@ function renderHosts() {
       <tr class="border-b border-base-300">
         <td class="text-center">${host.hostname}</td>
         <td class="text-center">${host.description || ''}</td>
+        <td class="text-center">${host.last_connected || 'Never'}</td>
         <td class="text-center space-x-2">
           <button class="btn btn-sm btn-ghost" onclick="window.saveHostCredentials('${host.hostname}')">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

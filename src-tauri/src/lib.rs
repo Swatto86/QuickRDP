@@ -60,6 +60,7 @@ struct StoredCredentials {
 struct Host {
     hostname: String,
     description: String,
+    last_connected: Option<String>,
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
@@ -528,9 +529,15 @@ fn get_hosts() -> Result<Vec<Host>, String> {
         match result {
             Ok(record) => {
                 if record.len() >= 2 {
+                    let last_connected = if record.len() >= 3 && !record[2].is_empty() {
+                        Some(record[2].to_string())
+                    } else {
+                        None
+                    };
                     hosts.push(Host {
                         hostname: record[0].to_string(),
                         description: record[1].to_string(),
+                        last_connected,
                     });
                 }
             }
@@ -575,7 +582,7 @@ fn save_host(host: Host) -> Result<(), String> {
         .map_err(|e| format!("Failed to create CSV writer: {}", e))?;
 
     // Write header
-    wtr.write_record(&["hostname", "description"])
+    wtr.write_record(&["hostname", "description", "last_connected"])
         .map_err(|e| format!("Failed to write CSV header: {}", e))?;
 
     // Write records
@@ -584,8 +591,12 @@ fn save_host(host: Host) -> Result<(), String> {
             "Writing host to CSV: {} - {}",
             host.hostname, host.description
         ));
-        wtr.write_record(&[&host.hostname, &host.description])
-            .map_err(|e| format!("Failed to write CSV record: {}", e))?;
+        wtr.write_record(&[
+            &host.hostname,
+            &host.description,
+            &host.last_connected.unwrap_or_default(),
+        ])
+        .map_err(|e| format!("Failed to write CSV record: {}", e))?;
     }
 
     wtr.flush()
@@ -606,17 +617,81 @@ fn delete_host(hostname: String) -> Result<(), String> {
         .map_err(|e| format!("Failed to create CSV writer: {}", e))?;
 
     // Write header
-    wtr.write_record(&["hostname", "description"])
+    wtr.write_record(&["hostname", "description", "last_connected"])
         .map_err(|e| format!("Failed to write CSV header: {}", e))?;
 
     // Write records
     for host in hosts {
-        wtr.write_record(&[&host.hostname, &host.description])
-            .map_err(|e| format!("Failed to write CSV record: {}", e))?;
+        wtr.write_record(&[
+            &host.hostname,
+            &host.description,
+            &host.last_connected.unwrap_or_default(),
+        ])
+        .map_err(|e| format!("Failed to write CSV record: {}", e))?;
     }
 
     wtr.flush()
         .map_err(|e| format!("Failed to flush CSV writer: {}", e))?;
+
+    Ok(())
+}
+
+fn update_last_connected(hostname: &str) -> Result<(), String> {
+    // Get current timestamp in UK format (DD/MM/YYYY HH:MM:SS)
+    use chrono::Local;
+    
+    let timestamp = Local::now().format("%d/%m/%Y %H:%M:%S").to_string();
+    
+    debug_log(
+        "INFO",
+        "TIMESTAMP_UPDATE",
+        &format!("Updating last connected for {} to {}", hostname, timestamp),
+        None,
+    );
+
+    // Read all hosts
+    let mut hosts = get_hosts()?;
+    
+    // Find and update the host
+    let mut found = false;
+    for host in &mut hosts {
+        if host.hostname == hostname {
+            host.last_connected = Some(timestamp.clone());
+            found = true;
+            break;
+        }
+    }
+    
+    if !found {
+        return Err(format!("Host {} not found in hosts list", hostname));
+    }
+    
+    // Write back to CSV
+    let mut wtr = csv::WriterBuilder::new()
+        .from_path("hosts.csv")
+        .map_err(|e| format!("Failed to create CSV writer: {}", e))?;
+
+    wtr.write_record(&["hostname", "description", "last_connected"])
+        .map_err(|e| format!("Failed to write CSV header: {}", e))?;
+
+    for host in hosts {
+        wtr.write_record(&[
+            &host.hostname,
+            &host.description,
+            &host.last_connected.unwrap_or_default(),
+        ])
+        .map_err(|e| format!("Failed to write CSV record: {}", e))?;
+    }
+
+    wtr.flush()
+        .map_err(|e| format!("Failed to flush CSV writer: {}", e))?;
+    
+    debug_log(
+        "INFO",
+        "TIMESTAMP_UPDATE",
+        &format!("Successfully updated last connected for {}", hostname),
+        None,
+    );
 
     Ok(())
 }
@@ -934,6 +1009,17 @@ cert ignore:i:1\r\n",
     if let Ok(mut recent) = load_recent_connections() {
         recent.add_connection(host.hostname.clone(), host.description.clone());
         let _ = save_recent_connections(&recent);
+    }
+
+    // Update last connected timestamp in hosts.csv
+    if let Err(e) = update_last_connected(&host.hostname) {
+        debug_log(
+            "WARN",
+            "RDP_LAUNCH",
+            &format!("Failed to update last connected timestamp: {}", e),
+            None,
+        );
+        // Don't fail the RDP launch if timestamp update fails
     }
 
     // RDP file is now persistent in AppData\Roaming\QuickRDP\Connections
@@ -1405,6 +1491,7 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
                 hosts.push(Host {
                     hostname: hostname.to_string(),
                     description,
+                    last_connected: None,
                 });
             }
         } else {
@@ -2479,6 +2566,7 @@ pub fn run() {
                                             let host = Host {
                                                 hostname: hostname.clone(),
                                                 description: String::new(),
+                                                last_connected: None,
                                             };
                                             if let Err(e) = launch_rdp(host).await {
                                                 eprintln!("Failed to launch RDP to {}: {}", hostname, e);

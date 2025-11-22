@@ -9,6 +9,7 @@ interface StoredCredentials {
 interface Host {
     hostname: string;
     description: string;
+    last_connected?: string;
 }
 
 function showNotification(message: string, isError: boolean = false) {
@@ -245,11 +246,13 @@ function renderHostsList(hosts: Host[], query: string = '') {
         
         const highlightedHostname = highlightMatches(host.hostname, query);
         const highlightedDescription = highlightMatches(host.description, query);
+        const lastConnected = host.last_connected || 'Never';
         
         item.innerHTML = `
             <div class="flex flex-col flex-1">
                 <span class="font-medium">${highlightedHostname}</span>
                 <span class="text-sm opacity-70">${highlightedDescription}</span>
+                <span class="text-xs opacity-50 mt-1">Last connected: ${lastConnected}</span>
             </div>
             <button class="connect-btn btn btn-primary btn-sm">
                 Connect
