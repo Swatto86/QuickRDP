@@ -2502,7 +2502,7 @@ fn build_tray_menu(app: &tauri::AppHandle, current_theme: &str) -> Result<Menu<t
 
     Menu::with_items(
         app,
-        &[&recent_submenu, &autostart_item, &theme_submenu, &about_item, &separator, &quit_item],
+        &[&recent_submenu, &theme_submenu, &autostart_item, &about_item, &separator, &quit_item],
     ).map_err(|e| e.into())
 }
 
@@ -2561,6 +2561,18 @@ pub fn run() {
     }
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            // When a second instance is launched, show the last hidden window
+            let _ = app.emit("single-instance", ());
+            
+            if let Ok(window_label) = LAST_HIDDEN_WINDOW.lock() {
+                if let Some(window) = app.get_webview_window(&window_label) {
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        }))
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .setup(move |app| {

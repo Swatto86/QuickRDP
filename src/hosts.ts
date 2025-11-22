@@ -1,6 +1,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from '@tauri-apps/api/event';
 
+console.log("hosts.ts script loaded!");
+
 interface Host {
   hostname: string;
   description: string;
@@ -50,62 +52,11 @@ async function initializeTheme() {
   });
 }
 
-document.addEventListener("DOMContentLoaded", async () => {
-  await initializeTheme();
-  loadHosts();
-  setupEventListeners();
-  window.addEventListener("keydown", async (e) => {
-    if (e.key === "Escape") {
-      try {
-        await invoke("hide_hosts_window");
-      } catch (err) {
-        console.error("Error hiding hosts window:", err);
-      }
-    }
-    
-    // Secret reset shortcut: Ctrl+Shift+Alt+R
-    if (e.ctrlKey && e.shiftKey && e.altKey && e.key === 'R') {
-      e.preventDefault();
-      
-      const confirmed = confirm(
-        '⚠️ WARNING: Application Reset ⚠️\n\n' +
-        'This will permanently delete:\n' +
-        '• All saved credentials\n' +
-        '• All RDP connection files\n' +
-        '• All saved hosts\n' +
-        '• Recent connection history\n\n' +
-        'This action CANNOT be undone!\n\n' +
-        'Are you sure you want to continue?'
-      );
-      
-      if (!confirmed) {
-        return;
-      }
-      
-      try {
-        const result = await invoke<string>("reset_application");
-        alert(result);
-        
-        // Recommend restarting the application
-        const shouldQuit = confirm(
-          'Reset complete!\n\n' +
-          'It is recommended to restart the application now.\n\n' +
-          'Do you want to quit the application?'
-        );
-        
-        if (shouldQuit) {
-          await invoke("quit_app");
-        }
-      } catch (err) {
-        alert('Failed to reset application: ' + err);
-        console.error("Reset error:", err);
-      }
-    }
-  });
-});
-
 function setupEventListeners() {
+  console.log("Setting up event listeners for hosts window");
+  
   document.getElementById("addHost")?.addEventListener("click", () => {
+    console.log("Add host button clicked");
     const modal = document.getElementById("hostModal") as HTMLDialogElement;
     document.getElementById("modalTitle")!.textContent = "Add Host";
     const form = document.getElementById("hostForm") as HTMLFormElement;
@@ -142,19 +93,47 @@ function setupEventListeners() {
     }
   });
 
-  document.getElementById("backToMain")?.addEventListener("click", async () => {
-    try {
-      await invoke("hide_hosts_window");
-    } catch (err) {
-      console.error("Error hiding hosts window:", err);
-    }
-  });
+  const backButton = document.getElementById("backToMain");
+  console.log("Back button element:", backButton);
+  if (backButton) {
+    backButton.addEventListener("click", async () => {
+      console.log("Back button clicked - attempting to hide hosts window");
+      try {
+        await invoke("hide_hosts_window");
+        console.log("Successfully invoked hide_hosts_window");
+      } catch (err) {
+        console.error("Error hiding hosts window:", err);
+        await showError(
+          "Failed to return to main window",
+          "WINDOW",
+          String(err)
+        );
+      }
+    });
+  } else {
+    console.error("Back button not found!");
+  }
 
   document.getElementById("scanDomain")?.addEventListener("click", () => {
     const modal = document.getElementById("scanDomainModal") as HTMLDialogElement;
     const form = document.getElementById("scanDomainForm") as HTMLFormElement;
     form.reset();
     modal.showModal();
+  });
+
+  document.getElementById("scanDomainCancel")?.addEventListener("click", () => {
+    const modal = document.getElementById("scanDomainModal") as HTMLDialogElement;
+    modal.close();
+  });
+
+  document.getElementById("hostModalCancel")?.addEventListener("click", () => {
+    const modal = document.getElementById("hostModal") as HTMLDialogElement;
+    modal.close();
+  });
+
+  document.getElementById("credentialsModalCancel")?.addEventListener("click", () => {
+    const modal = document.getElementById("credentialsModal") as HTMLDialogElement;
+    modal.close();
   });
 
   document.getElementById("scanDomainForm")?.addEventListener("submit", async (e) => {
@@ -499,3 +478,70 @@ declare global {
     saveHostCredentials: (hostname: string) => void;
   }
 }
+
+// Initialize the application when DOM is ready
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("DOM Content Loaded - initializing hosts window");
+  try {
+    await initializeTheme();
+    setupEventListeners();
+    await loadHosts();
+    console.log("Hosts window initialized successfully");
+  } catch (error) {
+    console.error("Error during initialization:", error);
+    await showError(
+      "Failed to initialize Manage Hosts window",
+      "INITIALIZATION",
+      String(error)
+    );
+  }
+  
+  window.addEventListener("keydown", async (e) => {
+    if (e.key === "Escape") {
+      try {
+        await invoke("hide_hosts_window");
+      } catch (err) {
+        console.error("Error hiding hosts window:", err);
+      }
+    }
+    
+    // Secret reset shortcut: Ctrl+Shift+Alt+R
+    if (e.ctrlKey && e.shiftKey && e.altKey && e.key === 'R') {
+      e.preventDefault();
+      
+      const confirmed = confirm(
+        '⚠️ WARNING: Application Reset ⚠️\n\n' +
+        'This will permanently delete:\n' +
+        '• All saved credentials\n' +
+        '• All RDP connection files\n' +
+        '• All saved hosts\n' +
+        '• Recent connection history\n\n' +
+        'This action CANNOT be undone!\n\n' +
+        'Are you sure you want to continue?'
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+      
+      try {
+        const result = await invoke<string>("reset_application");
+        alert(result);
+        
+        // Recommend restarting the application
+        const shouldQuit = confirm(
+          'Reset complete!\n\n' +
+          'It is recommended to restart the application now.\n\n' +
+          'Do you want to quit the application?'
+        );
+        
+        if (shouldQuit) {
+          await invoke("quit_app");
+        }
+      } catch (err) {
+        alert('Failed to reset application: ' + err);
+        console.error("Reset error:", err);
+      }
+    }
+  });
+});

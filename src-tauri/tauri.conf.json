@@ -25,8 +25,7 @@
         "focus": true,
         "skipTaskbar": false,
         "alwaysOnTop": false,
-        "center": true,
-        "devtools": false
+        "center": true
       },
       {
         "label": "main",
@@ -43,8 +42,7 @@
         "focus": true,
         "skipTaskbar": false,
         "alwaysOnTop": false,
-        "center": true,
-        "devtools": false
+        "center": true
       },
       {
         "label": "hosts",
@@ -61,8 +59,7 @@
         "focus": true,
         "skipTaskbar": false,
         "alwaysOnTop": false,
-        "center": true,
-        "devtools": false
+        "center": true
       },
       {
         "label": "about",
@@ -77,8 +74,7 @@
         "focus": true,
         "skipTaskbar": true,
         "alwaysOnTop": true,
-        "center": true,
-        "devtools": false
+        "center": true
       },
       {
         "label": "error",
@@ -95,8 +91,7 @@
         "focus": true,
         "skipTaskbar": true,
         "alwaysOnTop": true,
-        "center": true,
-        "devtools": false
+        "center": true
       }
     ],
     "security": {
