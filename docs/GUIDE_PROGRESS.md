@@ -172,45 +172,55 @@
 
 ---
 
-### ⬜ Chapter 10: Tauri Commands - The Bridge
-**Pages: 12-15 | Status: Not Started**
-- [ ] 10.1 Understanding #[tauri::command]
-- [ ] 10.2 Synchronous vs Asynchronous Commands
-- [ ] 10.3 Parameter Passing and Serialization
-- [ ] 10.4 Return Types and Error Handling
-- [ ] 10.5 Using AppHandle for Window Access
-- [ ] 10.6 Command Organization Patterns
-- [ ] 10.7 Type Safety Across the Bridge
-- [ ] 10.8 QuickRDP Command Examples
+### ✅ Chapter 10: Tauri Commands - The Bridge
+**Pages: 48 | Status: COMPLETED - November 23, 2025**
+- [x] 10.1 Understanding #[tauri::command]
+- [x] 10.2 Synchronous vs Asynchronous Commands
+- [x] 10.3 Parameter Passing and Serialization
+- [x] 10.4 Return Types and Error Handling
+- [x] 10.5 Using AppHandle for Window Access
+- [x] 10.6 Command Organization Patterns
+- [x] 10.7 Type Safety Across the Bridge
+- [x] 10.8 QuickRDP Command Examples
+- [x] 10.9 Registering Commands
+- [x] 10.10 Key Takeaways
+- [x] 10.11 Practice Exercises with Solutions
 **Learning Outcomes:** Create robust backend commands
+**File:** `docs/Chapter_10_Tauri_Commands_The_Bridge.md`
 
 ---
 
-### ⬜ Chapter 11: Windows API Integration
-**Pages: 15-18 | Status: Not Started**
-- [ ] 11.1 Introduction to windows-rs Crate
-- [ ] 11.2 Win32 API Fundamentals
-- [ ] 11.3 Working with HRESULT and Error Codes
-- [ ] 11.4 String Conversions (UTF-16)
-- [ ] 11.5 Unsafe Code and Safety Patterns
-- [ ] 11.6 ShellExecuteW for Process Launching
-- [ ] 11.7 Registry Access
-- [ ] 11.8 QuickRDP Windows Integration Examples
+### ✅ Chapter 11: Windows API Integration
+**Pages: 50 | Status: COMPLETED - November 23, 2025**
+- [x] 11.1 Introduction to windows-rs Crate
+- [x] 11.2 Win32 API Fundamentals
+- [x] 11.3 Working with HRESULT and Error Codes
+- [x] 11.4 String Conversions (UTF-16)
+- [x] 11.5 Unsafe Code and Safety Patterns
+- [x] 11.6 ShellExecuteW for Process Launching
+- [x] 11.7 Registry Access
+- [x] 11.8 QuickRDP Windows Integration Examples
+- [x] 11.9 Key Takeaways
+- [x] 11.10 Practice Exercises with Solutions
 **Learning Outcomes:** Integrate with Windows APIs safely
+**File:** `docs/Chapter_11_Windows_API_Integration.md`
 
 ---
 
-### ⬜ Chapter 12: File I/O and Data Persistence
-**Pages: 10-12 | Status: Not Started**
-- [ ] 12.1 Rust std::fs Module
-- [ ] 12.2 Path Handling and PathBuf
-- [ ] 12.3 CSV File Operations
-- [ ] 12.4 JSON Serialization with serde
-- [ ] 12.5 AppData Directory Patterns
-- [ ] 12.6 Error Handling for File Operations
-- [ ] 12.7 File Watching and Updates
-- [ ] 12.8 QuickRDP hosts.csv Implementation
+### ✅ Chapter 12: File I/O and Data Persistence
+**Pages: 62 | Status: COMPLETED - November 23, 2025**
+- [x] 12.1 Rust std::fs Module
+- [x] 12.2 Path Handling and PathBuf
+- [x] 12.3 CSV File Operations
+- [x] 12.4 JSON Serialization with serde
+- [x] 12.5 AppData Directory Patterns
+- [x] 12.6 Error Handling for File Operations
+- [x] 12.7 File Watching and Updates
+- [x] 12.8 QuickRDP hosts.csv Implementation
+- [x] 12.9 Key Takeaways
+- [x] 12.10 Practice Exercises with Solutions
 **Learning Outcomes:** Persist data reliably
+**File:** `docs/Chapter_12_File_IO_and_Data_Persistence.md`
 
 ---
 
@@ -401,15 +411,15 @@
 ## Completion Statistics
 
 **Total Chapters:** 21  
-**Completed:** 9  
+**Completed:** 12  
 **In Progress:** 0  
-**Not Started:** 12  
+**Not Started:** 9  
 
 **Total Appendices:** 4  
 **Completed:** 0
 
-**Overall Progress:** 42.9% Complete (9/21 chapters)
-**Total Pages Written:** 356 pages
+**Overall Progress:** 57.1% Complete (12/21 chapters)
+**Total Pages Written:** 516 pages
 
 **Estimated Completion:** [To be determined]
 **Started:** November 22, 2025
@@ -428,8 +438,11 @@
 7. ✅ ~~Chapter 7: Multi-Window Applications~~
 8. ✅ ~~Chapter 8: State Management and Data Flow~~
 9. ✅ ~~Chapter 9: Advanced Features and Windows Integration~~
-10. ⬜ Begin Chapter 10: Tauri Commands - The Bridge
-11. ⬜ Deep dive into command patterns and best practices
+10. ✅ ~~Chapter 10: Tauri Commands - The Bridge~~
+11. ✅ ~~Chapter 11: Windows API Integration~~
+12. ✅ ~~Chapter 12: File I/O and Data Persistence~~
+13. ⬜ Begin Chapter 13: Windows Credential Manager
+14. ⬜ Continue with Chapter 14: Advanced Error Handling and Logging
 
 ---
 
