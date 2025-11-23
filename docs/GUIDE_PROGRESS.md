@@ -156,174 +156,190 @@
 
 ## **PART 3: BACKEND DEVELOPMENT (RUST)**
 
-### ⬜ Chapter 9: Tauri Commands - The Bridge
+### ✅ Chapter 9: Advanced Features and Windows Integration
+**Pages: 50 | Status: COMPLETED - November 23, 2025**
+- [x] 9.1 Centralized Error Display System
+- [x] 9.2 Recent Connections Tracking
+- [x] 9.3 Per-Host Credential Management
+- [x] 9.4 Debug Logging System
+- [x] 9.5 Application Reset Functionality
+- [x] 9.6 Autostart with Windows
+- [x] 9.7 Theme Management Across Windows
+- [x] 9.8 Single Instance Application
+- [x] 9.9 Key Takeaways
+**Learning Outcomes:** Implement production-ready Windows integrations
+**File:** `docs/Chapter_09_Advanced_Features_and_Integration.md`
+
+---
+
+### ⬜ Chapter 10: Tauri Commands - The Bridge
 **Pages: 12-15 | Status: Not Started**
-- [ ] 9.1 Understanding #[tauri::command]
-- [ ] 9.2 Synchronous vs Asynchronous Commands
-- [ ] 9.3 Parameter Passing and Serialization
-- [ ] 9.4 Return Types and Error Handling
-- [ ] 9.5 Using AppHandle for Window Access
-- [ ] 9.6 Command Organization Patterns
-- [ ] 9.7 Type Safety Across the Bridge
-- [ ] 9.8 QuickRDP Command Examples
+- [ ] 10.1 Understanding #[tauri::command]
+- [ ] 10.2 Synchronous vs Asynchronous Commands
+- [ ] 10.3 Parameter Passing and Serialization
+- [ ] 10.4 Return Types and Error Handling
+- [ ] 10.5 Using AppHandle for Window Access
+- [ ] 10.6 Command Organization Patterns
+- [ ] 10.7 Type Safety Across the Bridge
+- [ ] 10.8 QuickRDP Command Examples
 **Learning Outcomes:** Create robust backend commands
 
 ---
 
-### ⬜ Chapter 10: Windows API Integration
+### ⬜ Chapter 11: Windows API Integration
 **Pages: 15-18 | Status: Not Started**
-- [ ] 10.1 Introduction to windows-rs Crate
-- [ ] 10.2 Win32 API Fundamentals
-- [ ] 10.3 Working with HRESULT and Error Codes
-- [ ] 10.4 String Conversions (UTF-16)
-- [ ] 10.5 Unsafe Code and Safety Patterns
-- [ ] 10.6 ShellExecuteW for Process Launching
-- [ ] 10.7 Registry Access
-- [ ] 10.8 QuickRDP Windows Integration Examples
+- [ ] 11.1 Introduction to windows-rs Crate
+- [ ] 11.2 Win32 API Fundamentals
+- [ ] 11.3 Working with HRESULT and Error Codes
+- [ ] 11.4 String Conversions (UTF-16)
+- [ ] 11.5 Unsafe Code and Safety Patterns
+- [ ] 11.6 ShellExecuteW for Process Launching
+- [ ] 11.7 Registry Access
+- [ ] 11.8 QuickRDP Windows Integration Examples
 **Learning Outcomes:** Integrate with Windows APIs safely
 
 ---
 
-### ⬜ Chapter 11: File I/O and Data Persistence
+### ⬜ Chapter 12: File I/O and Data Persistence
 **Pages: 10-12 | Status: Not Started**
-- [ ] 11.1 Rust std::fs Module
-- [ ] 11.2 Path Handling and PathBuf
-- [ ] 11.3 CSV File Operations
-- [ ] 11.4 JSON Serialization with serde
-- [ ] 11.5 AppData Directory Patterns
-- [ ] 11.6 Error Handling for File Operations
-- [ ] 11.7 File Watching and Updates
-- [ ] 11.8 QuickRDP hosts.csv Implementation
+- [ ] 12.1 Rust std::fs Module
+- [ ] 12.2 Path Handling and PathBuf
+- [ ] 12.3 CSV File Operations
+- [ ] 12.4 JSON Serialization with serde
+- [ ] 12.5 AppData Directory Patterns
+- [ ] 12.6 Error Handling for File Operations
+- [ ] 12.7 File Watching and Updates
+- [ ] 12.8 QuickRDP hosts.csv Implementation
 **Learning Outcomes:** Persist data reliably
 
 ---
 
-### ⬜ Chapter 12: Windows Credential Manager
+### ⬜ Chapter 13: Windows Credential Manager
 **Pages: 12-15 | Status: Not Started**
-- [ ] 12.1 Understanding Windows Credential Manager
-- [ ] 12.2 CREDENTIALW Structure
-- [ ] 12.3 CredWriteW - Storing Credentials
-- [ ] 12.4 CredReadW - Retrieving Credentials
-- [ ] 12.5 CredDeleteW - Removing Credentials
-- [ ] 12.6 UTF-16 String Handling
-- [ ] 12.7 Security Best Practices
-- [ ] 12.8 QuickRDP Credential System Deep Dive
+- [ ] 13.1 Understanding Windows Credential Manager
+- [ ] 13.2 CREDENTIALW Structure
+- [ ] 13.3 CredWriteW - Storing Credentials
+- [ ] 13.4 CredReadW - Retrieving Credentials
+- [ ] 13.5 CredDeleteW - Removing Credentials
+- [ ] 13.6 UTF-16 String Handling
+- [ ] 13.7 Security Best Practices
+- [ ] 13.8 QuickRDP Credential System Deep Dive
 **Learning Outcomes:** Store credentials securely
 
 ---
 
-### ⬜ Chapter 13: Advanced Error Handling and Logging
+### ⬜ Chapter 14: Advanced Error Handling and Logging
 **Pages: 10-12 | Status: Not Started**
-- [ ] 13.1 Custom Error Types
-- [ ] 13.2 Error Propagation Patterns
-- [ ] 13.3 Debug vs Release Logging
-- [ ] 13.4 Structured Logging
-- [ ] 13.5 Debug Mode Implementation
-- [ ] 13.6 Error Window UI Pattern
-- [ ] 13.7 Troubleshooting Guides in Logs
-- [ ] 13.8 QuickRDP debug_log Function Analysis
+- [ ] 14.1 Custom Error Types
+- [ ] 14.2 Error Propagation Patterns
+- [ ] 14.3 Debug vs Release Logging
+- [ ] 14.4 Structured Logging
+- [ ] 14.5 Debug Mode Implementation
+- [ ] 14.6 Error Window UI Pattern
+- [ ] 14.7 Troubleshooting Guides in Logs
+- [ ] 14.8 QuickRDP debug_log Function Analysis
 **Learning Outcomes:** Build robust error handling
 
 ---
 
 ## **PART 4: ADVANCED FEATURES**
 
-### ⬜ Chapter 14: System Tray Integration
+### ⬜ Chapter 15: System Tray Integration
 **Pages: 10-12 | Status: Not Started**
-- [ ] 14.1 Tauri Tray Icon Plugin
-- [ ] 14.2 Creating Tray Menus
-- [ ] 14.3 Menu Items and Submenus
-- [ ] 14.4 Tray Click Events
-- [ ] 14.5 Dynamic Menu Updates
-- [ ] 14.6 Window Show/Hide from Tray
-- [ ] 14.7 Theme Switching from Tray
-- [ ] 14.8 QuickRDP Tray Implementation
+- [ ] 15.1 Tauri Tray Icon Plugin
+- [ ] 15.2 Creating Tray Menus
+- [ ] 15.3 Menu Items and Submenus
+- [ ] 15.4 Tray Click Events
+- [ ] 15.5 Dynamic Menu Updates
+- [ ] 15.6 Window Show/Hide from Tray
+- [ ] 15.7 Theme Switching from Tray
+- [ ] 15.8 QuickRDP Tray Implementation
 **Learning Outcomes:** Add system tray functionality
 
 ---
 
-### ⬜ Chapter 15: LDAP and Active Directory
+### ⬜ Chapter 16: LDAP and Active Directory
 **Pages: 12-15 | Status: Not Started**
-- [ ] 15.1 LDAP Protocol Basics
-- [ ] 15.2 ldap3 Crate Introduction
-- [ ] 15.3 Async LDAP Connections
-- [ ] 15.4 LDAP Bind Operations
-- [ ] 15.5 Search Filters and Queries
-- [ ] 15.6 Parsing Search Results
-- [ ] 15.7 Error Handling for Network Operations
-- [ ] 15.8 QuickRDP Domain Scanner Implementation
+- [ ] 16.1 LDAP Protocol Basics
+- [ ] 16.2 ldap3 Crate Introduction
+- [ ] 16.3 Async LDAP Connections
+- [ ] 16.4 LDAP Bind Operations
+- [ ] 16.5 Search Filters and Queries
+- [ ] 16.6 Parsing Search Results
+- [ ] 16.7 Error Handling for Network Operations
+- [ ] 16.8 QuickRDP Domain Scanner Implementation
 **Learning Outcomes:** Query Active Directory
 
 ---
 
-### ⬜ Chapter 16: Process Management and RDP
+### ⬜ Chapter 17: Process Management and RDP
 **Pages: 10-12 | Status: Not Started**
-- [ ] 16.1 Creating Dynamic Files
-- [ ] 16.2 RDP File Format Specification
-- [ ] 16.3 Launching External Processes
-- [ ] 16.4 Process Handle Management
-- [ ] 16.5 Environment Variables
-- [ ] 16.6 Working with TERMSRV Credentials
-- [ ] 16.7 Connection File Persistence
-- [ ] 16.8 QuickRDP RDP Launch Flow
+- [ ] 17.1 Creating Dynamic Files
+- [ ] 17.2 RDP File Format Specification
+- [ ] 17.3 Launching External Processes
+- [ ] 17.4 Process Handle Management
+- [ ] 17.5 Environment Variables
+- [ ] 17.6 Working with TERMSRV Credentials
+- [ ] 17.7 Connection File Persistence
+- [ ] 17.8 QuickRDP RDP Launch Flow
 **Learning Outcomes:** Launch and manage external processes
 
 ---
 
-### ⬜ Chapter 17: Configuration and Settings
+### ⬜ Chapter 18: Configuration and Settings
 **Pages: 8-10 | Status: Not Started**
-- [ ] 17.1 Application Settings Patterns
-- [ ] 17.2 Registry for Windows Settings
-- [ ] 17.3 Theme Persistence
-- [ ] 17.4 Startup Configuration
-- [ ] 17.5 User Preferences
-- [ ] 17.6 Recent Connections Tracking
-- [ ] 17.7 Migration and Upgrades
-- [ ] 17.8 QuickRDP Settings System
+- [ ] 18.1 Application Settings Patterns
+- [ ] 18.2 Registry for Windows Settings
+- [ ] 18.3 Theme Persistence
+- [ ] 18.4 Startup Configuration
+- [ ] 18.5 User Preferences
+- [ ] 18.6 Recent Connections Tracking
+- [ ] 18.7 Migration and Upgrades
+- [ ] 18.8 QuickRDP Settings System
 **Learning Outcomes:** Implement persistent settings
 
 ---
 
-### ⬜ Chapter 18: Keyboard Shortcuts and Global Hotkeys
+### ⬜ Chapter 19: Keyboard Shortcuts and Global Hotkeys
 **Pages: 8-10 | Status: Not Started**
-- [ ] 18.1 tauri-plugin-global-shortcut
-- [ ] 18.2 Registering Global Shortcuts
-- [ ] 18.3 Window-Level Shortcuts
-- [ ] 18.4 Keyboard Event Handling
-- [ ] 18.5 Shortcut Conflicts Resolution
-- [ ] 18.6 User-Customizable Shortcuts
-- [ ] 18.7 Secret Shortcuts Pattern
-- [ ] 18.8 QuickRDP Reset Shortcut (Ctrl+Shift+Alt+R)
+- [ ] 19.1 tauri-plugin-global-shortcut
+- [ ] 19.2 Registering Global Shortcuts
+- [ ] 19.3 Window-Level Shortcuts
+- [ ] 19.4 Keyboard Event Handling
+- [ ] 19.5 Shortcut Conflicts Resolution
+- [ ] 19.6 User-Customizable Shortcuts
+- [ ] 19.7 Secret Shortcuts Pattern
+- [ ] 19.8 QuickRDP Reset Shortcut (Ctrl+Shift+Alt+R)
 **Learning Outcomes:** Add keyboard shortcuts
 
 ---
 
 ## **PART 5: POLISH AND DISTRIBUTION**
 
-### ⬜ Chapter 19: Testing, Debugging, and Performance
+### ⬜ Chapter 20: Testing, Debugging, and Performance
 **Pages: 12-15 | Status: Not Started**
-- [ ] 19.1 Unit Testing Rust Code
-- [ ] 19.2 Integration Testing
-- [ ] 19.3 Frontend Testing Strategies
-- [ ] 19.4 DevTools and Debugging
-- [ ] 19.5 Performance Profiling
-- [ ] 19.6 Memory Management
-- [ ] 19.7 Optimization Techniques
-- [ ] 19.8 Common Pitfalls and Solutions
+- [ ] 20.1 Unit Testing Rust Code
+- [ ] 20.2 Integration Testing
+- [ ] 20.3 Frontend Testing Strategies
+- [ ] 20.4 DevTools and Debugging
+- [ ] 20.5 Performance Profiling
+- [ ] 20.6 Memory Management
+- [ ] 20.7 Optimization Techniques
+- [ ] 20.8 Common Pitfalls and Solutions
 **Learning Outcomes:** Ensure quality and performance
 
 ---
 
-### ⬜ Chapter 20: Building and Distribution
+### ⬜ Chapter 21: Building and Distribution
 **Pages: 10-12 | Status: Not Started**
-- [ ] 20.1 Release Build Configuration
-- [ ] 20.2 Code Signing for Windows
-- [ ] 20.3 Creating Installers (MSI, NSIS)
-- [ ] 20.4 Auto-Update Implementation
-- [ ] 20.5 Version Management
-- [ ] 20.6 Documentation and Help Files
-- [ ] 20.7 Deployment Checklist
-- [ ] 20.8 Distribution Platforms
+- [ ] 21.1 Release Build Configuration
+- [ ] 21.2 Code Signing for Windows
+- [ ] 21.3 Creating Installers (MSI, NSIS)
+- [ ] 21.4 Auto-Update Implementation
+- [ ] 21.5 Version Management
+- [ ] 21.6 Documentation and Help Files
+- [ ] 21.7 Deployment Checklist
+- [ ] 21.8 Distribution Platforms
 **Learning Outcomes:** Ship production-ready applications
 
 ---
@@ -384,20 +400,20 @@
 
 ## Completion Statistics
 
-**Total Chapters:** 20  
-**Completed:** 8  
+**Total Chapters:** 21  
+**Completed:** 9  
 **In Progress:** 0  
 **Not Started:** 12  
 
 **Total Appendices:** 4  
 **Completed:** 0
 
-**Overall Progress:** 40% Complete (8/20 chapters)
-**Total Pages Written:** 306 pages
+**Overall Progress:** 42.9% Complete (9/21 chapters)
+**Total Pages Written:** 356 pages
 
 **Estimated Completion:** [To be determined]
 **Started:** November 22, 2025
-**Last Updated:** November 22, 2025
+**Last Updated:** November 23, 2025
 
 ---
 
@@ -411,8 +427,9 @@
 6. ✅ ~~Chapter 6: Styling with Tailwind CSS and DaisyUI~~
 7. ✅ ~~Chapter 7: Multi-Window Applications~~
 8. ✅ ~~Chapter 8: State Management and Data Flow~~
-9. ⬜ Begin Chapter 9: Tauri Commands - The Bridge
-10. ⬜ Deep dive into command patterns and best practices
+9. ✅ ~~Chapter 9: Advanced Features and Windows Integration~~
+10. ⬜ Begin Chapter 10: Tauri Commands - The Bridge
+11. ⬜ Deep dive into command patterns and best practices
 
 ---
 

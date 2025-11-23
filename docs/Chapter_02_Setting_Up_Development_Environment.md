@@ -775,6 +775,7 @@ Let's examine what QuickRDP specifically requires:
 [dependencies]
 tauri = { version = "2.0.0", features = [ "tray-icon" ] }
 tauri-plugin-shell = "2"
+tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 windows = { version = "0.52", features = [
@@ -790,6 +791,9 @@ csv = "1.3"
 ldap3 = "0.11"
 tokio = { version = "1", features = ["rt", "macros"] }
 chrono = "0.4"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-global-shortcut = "2"
 ```
 
 ### To Clone and Run QuickRDP
