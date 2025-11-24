@@ -992,7 +992,7 @@ redirectsmartcards:i:1\r\n\
 redirectclipboard:i:1\r\n\
 redirectposdevices:i:0\r\n\
 autoreconnection enabled:i:1\r\n\
-authentication level:i:2\r\n\
+authentication level:i:0\r\n\
 prompt for credentials:i:0\r\n\
 negotiate security layer:i:1\r\n\
 remoteapplicationmode:i:0\r\n\
@@ -1010,7 +1010,9 @@ username:s:{}\r\n\
 domain:s:{}\r\n\
 enablecredsspsupport:i:1\r\n\
 public mode:i:0\r\n\
-cert ignore:i:1\r\n",
+cert ignore:i:1\r\n\
+prompt for credentials on client:i:0\r\n\
+disableconnectionsharing:i:0\r\n",
         host.hostname, username, domain
     );
 
