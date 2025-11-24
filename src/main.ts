@@ -370,6 +370,12 @@ function initializeSearch() {
 
 async function initializeServerList() {
     await loadAllHosts();
+    
+    // Listen for host-connected events to refresh the list in real-time
+    await listen('host-connected', async (event) => {
+        console.log('Host connected event received:', event.payload);
+        await loadAllHosts();
+    });
 }
 
 // Function to hide timer notification

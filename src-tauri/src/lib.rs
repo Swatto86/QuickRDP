@@ -769,7 +769,7 @@ fn update_last_connected(hostname: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
-async fn launch_rdp(host: Host) -> Result<(), String> {
+async fn launch_rdp(app_handle: tauri::AppHandle, host: Host) -> Result<(), String> {
     debug_log(
         "INFO",
         "RDP_LAUNCH",
@@ -1110,6 +1110,34 @@ cert ignore:i:1\r\n",
             None,
         );
         // Don't fail the RDP launch if timestamp update fails
+    } else {
+        // Successfully updated timestamp, emit event to refresh UI
+        debug_log(
+            "INFO",
+            "RDP_LAUNCH",
+            "Emitting host-connected event to refresh UI",
+            None,
+        );
+        
+        // Emit event to all windows to refresh host list
+        if let Some(main_window) = app_handle.get_webview_window("main") {
+            let _ = main_window.emit("host-connected", &host.hostname);
+        }
+        
+        // Rebuild tray menu to update recent connections list
+        if let Some(tray) = app_handle.tray_by_id("main") {
+            let current_theme = get_theme(app_handle.clone())
+                .unwrap_or_else(|_| "dark".to_string());
+            if let Ok(new_menu) = build_tray_menu(&app_handle, &current_theme) {
+                let _ = tray.set_menu(Some(new_menu));
+                debug_log(
+                    "INFO",
+                    "RDP_LAUNCH",
+                    "Updated tray menu with latest recent connections",
+                    None,
+                );
+            }
+        }
     }
 
     // RDP file is now persistent in AppData\Roaming\QuickRDP\Connections
@@ -2761,12 +2789,13 @@ pub fn run() {
                         let hostname = id_str.strip_prefix("recent_").unwrap_or("").to_string();
                         if !hostname.is_empty() {
                             // Get the host details and launch RDP
+                            let app_clone = app.clone();
                             tauri::async_runtime::spawn(async move {
                                 // Try to get host from hosts list
                                 match get_hosts() {
                                     Ok(hosts) => {
                                         if let Some(host) = hosts.into_iter().find(|h| h.hostname == hostname) {
-                                            if let Err(e) = launch_rdp(host).await {
+                                            if let Err(e) = launch_rdp(app_clone.clone(), host).await {
                                                 eprintln!("Failed to launch RDP to {}: {}", hostname, e);
                                             }
                                         } else {
@@ -2776,7 +2805,7 @@ pub fn run() {
                                                 description: String::new(),
                                                 last_connected: None,
                                             };
-                                            if let Err(e) = launch_rdp(host).await {
+                                            if let Err(e) = launch_rdp(app_clone, host).await {
                                                 eprintln!("Failed to launch RDP to {}: {}", hostname, e);
                                             }
                                         }
