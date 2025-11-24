@@ -73,7 +73,7 @@ use tauri::{
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Emitter, Manager,
 };
-use windows::core::{HSTRING, PCWSTR, PWSTR};
+use windows::core::{PCWSTR, PWSTR};
 use windows::Win32::Foundation::FILETIME;
 use windows::Win32::Security::Credentials::{
     CredDeleteW, CredEnumerateW, CredReadW, CredWriteW, CREDENTIALW, CRED_ENUMERATE_FLAGS,
@@ -83,8 +83,6 @@ use windows::Win32::System::Registry::{
     RegCloseKey, RegDeleteValueW, RegOpenKeyExW, RegQueryValueExW, RegSetValueExW, HKEY,
     HKEY_CURRENT_USER, KEY_READ, KEY_WRITE, REG_SZ, REG_VALUE_TYPE,
 };
-use windows::Win32::UI::Shell::ShellExecuteW;
-use windows::Win32::UI::WindowsAndMessaging::SW_SHOWNORMAL;
 
 static LAST_HIDDEN_WINDOW: Mutex<String> = Mutex::new(String::new());
 static DEBUG_MODE: Mutex<bool> = Mutex::new(false);
@@ -1049,53 +1047,43 @@ disableconnectionsharing:i:0\r\n",
         }
     }
 
-    // Launch RDP file using Windows ShellExecuteW API
-    // Opening the .rdp file directly (like double-clicking in Explorer)
+    // Launch RDP using mstsc.exe directly with the RDP file as parameter
+    // This bypasses the file trust warning that appears when opening .rdp files directly
     debug_log(
         "INFO",
         "RDP_LAUNCH",
-        "Attempting to open RDP file with ShellExecuteW",
+        "Attempting to launch mstsc.exe with RDP file",
         Some(&format!("Target file: {:?}", rdp_path)),
     );
 
-    unsafe {
-        let operation = HSTRING::from("open");
-        let file = HSTRING::from(rdp_path.to_string_lossy().as_ref());
+    // Use std::process::Command to launch mstsc.exe
+    let mstsc_result = std::process::Command::new("mstsc.exe")
+        .arg(rdp_path.to_string_lossy().as_ref())
+        .spawn();
 
-        let result = ShellExecuteW(
-            None,          // hwnd
-            &operation,    // lpOperation - "open"
-            &file,         // lpFile - path to .rdp file
-            None,          // lpParameters - none needed
-            None,          // lpDirectory
-            SW_SHOWNORMAL, // nShowCmd
-        );
-
-        // ShellExecuteW returns a value > 32 on success
-        if result.0 as i32 <= 32 {
-            let error = format!("Failed to open RDP file. Error code: {}", result.0);
+    match mstsc_result {
+        Ok(_) => {
+            debug_log(
+                "INFO",
+                "RDP_LAUNCH",
+                &format!(
+                    "Successfully launched RDP connection to {} using mstsc.exe",
+                    host.hostname
+                ),
+                Some(&format!("RDP client invoked for hostname: {}", host.hostname)),
+            );
+        }
+        Err(e) => {
+            let error = format!("Failed to launch mstsc.exe: {}", e);
             debug_log(
                 "ERROR",
                 "RDP_LAUNCH",
                 &error,
-                Some(&format!(
-                    "ShellExecuteW returned error code: {}. File: {:?}",
-                    result.0, rdp_path
-                )),
+                Some(&format!("Failed to spawn mstsc.exe process: {:?}", e)),
             );
             return Err(error);
         }
     }
-
-    debug_log(
-        "INFO",
-        "RDP_LAUNCH",
-        &format!(
-            "Successfully launched RDP connection to {} using file: {:?}",
-            host.hostname, rdp_path
-        ),
-        Some(&format!("RDP client invoked for hostname: {}", host.hostname)),
-    );
 
     // Save to recent connections
     if let Ok(mut recent) = load_recent_connections() {
