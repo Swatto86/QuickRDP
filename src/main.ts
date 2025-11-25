@@ -268,19 +268,19 @@ function renderHostsList(hosts: Host[], query: string = '') {
 
     hosts.forEach(host => {
         const item = document.createElement("div");
-        item.className = "flex items-center justify-between p-4 border-b border-base-300 last:border-b-0 hover:bg-base-300 cursor-pointer transition-colors";
+        item.className = "flex items-center justify-between py-2 px-3 border-b border-base-300 last:border-b-0 hover:bg-base-300 cursor-pointer transition-colors";
         
         const highlightedHostname = highlightMatches(host.hostname, query);
         const highlightedDescription = highlightMatches(host.description, query);
         const lastConnected = host.last_connected || 'Never';
         
         item.innerHTML = `
-            <div class="flex flex-col flex-1">
-                <span class="font-medium">${highlightedHostname}</span>
-                <span class="text-sm opacity-70">${highlightedDescription}</span>
-                <span class="text-xs opacity-50 mt-1">Last connected: ${lastConnected}</span>
+            <div class="flex flex-col flex-1 gap-0.5">
+                <span class="font-medium text-sm">${highlightedHostname}</span>
+                <span class="text-xs opacity-70">${highlightedDescription}</span>
+                <span class="text-xs opacity-50">Last connected: ${lastConnected}</span>
             </div>
-            <button class="connect-btn btn btn-primary btn-sm">
+            <button class="connect-btn btn btn-primary btn-xs">
                 Connect
             </button>
         `;
