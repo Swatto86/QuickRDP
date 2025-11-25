@@ -148,12 +148,68 @@ impl RecentConnections {
     }
 }
 
-fn get_recent_connections_file() -> Result<PathBuf, String> {
+fn get_quickrdp_dir() -> Result<PathBuf, String> {
     let appdata_dir = std::env::var("APPDATA")
         .map_err(|_| "Failed to get APPDATA directory".to_string())?;
     let quickrdp_dir = PathBuf::from(appdata_dir).join("QuickRDP");
     std::fs::create_dir_all(&quickrdp_dir)
         .map_err(|e| format!("Failed to create QuickRDP directory: {}", e))?;
+    Ok(quickrdp_dir)
+}
+
+fn get_hosts_csv_path() -> Result<PathBuf, String> {
+    let quickrdp_dir = get_quickrdp_dir()?;
+    Ok(quickrdp_dir.join("hosts.csv"))
+}
+
+/// Migrate hosts.csv from old location (working directory) to new location (AppData)
+fn migrate_hosts_csv_if_needed() {
+    // Check if there's an old hosts.csv in the current working directory
+    let old_path = std::path::Path::new("hosts.csv");
+    
+    if old_path.exists() {
+        if let Ok(new_path) = get_hosts_csv_path() {
+            // Only migrate if the new location doesn't already exist
+            if !new_path.exists() {
+                if let Err(e) = std::fs::copy(old_path, &new_path) {
+                    debug_log(
+                        "ERROR",
+                        "MIGRATION",
+                        &format!("Failed to migrate hosts.csv to AppData: {}", e),
+                        None,
+                    );
+                } else {
+                    debug_log(
+                        "INFO",
+                        "MIGRATION",
+                        &format!("Successfully migrated hosts.csv to {}", new_path.display()),
+                        None,
+                    );
+                    
+                    // Optionally delete the old file after successful migration
+                    if let Err(e) = std::fs::remove_file(old_path) {
+                        debug_log(
+                            "WARN",
+                            "MIGRATION",
+                            &format!("Failed to delete old hosts.csv: {}", e),
+                            None,
+                        );
+                    }
+                }
+            } else {
+                debug_log(
+                    "INFO",
+                    "MIGRATION",
+                    "hosts.csv already exists in AppData, skipping migration",
+                    None,
+                );
+            }
+        }
+    }
+}
+
+fn get_recent_connections_file() -> Result<PathBuf, String> {
+    let quickrdp_dir = get_quickrdp_dir()?;
     Ok(quickrdp_dir.join("recent_connections.json"))
 }
 
@@ -559,14 +615,14 @@ async fn hide_hosts_window(app_handle: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 fn get_hosts() -> Result<Vec<Host>, String> {
     debug_log("DEBUG", "CSV_OPERATIONS", "Reading hosts from CSV", None);
-    let path = std::path::Path::new("hosts.csv");
+    let path = get_hosts_csv_path()?;
     if !path.exists() {
         debug_log("INFO", "CSV_OPERATIONS", "hosts.csv does not exist, returning empty list", None);
         return Ok(Vec::new());
     }
 
     let contents =
-        std::fs::read_to_string(path).map_err(|e| format!("Failed to read CSV: {}", e))?;
+        std::fs::read_to_string(&path).map_err(|e| format!("Failed to read CSV: {}", e))?;
 
     let mut hosts = Vec::new();
     let mut reader = csv::ReaderBuilder::new()
@@ -603,7 +659,7 @@ fn get_hosts() -> Result<Vec<Host>, String> {
 }
 
 #[tauri::command]
-fn save_host(host: Host) -> Result<(), String> {
+fn save_host(app_handle: tauri::AppHandle, host: Host) -> Result<(), String> {
     debug_log(
         "INFO",
         "CSV_OPERATIONS",
@@ -612,9 +668,10 @@ fn save_host(host: Host) -> Result<(), String> {
     );
     
     // Create hosts.csv if it doesn't exist
-    if !std::path::Path::new("hosts.csv").exists() {
+    let csv_path = get_hosts_csv_path()?;
+    if !csv_path.exists() {
         let mut wtr = csv::WriterBuilder::new()
-            .from_path("hosts.csv")
+            .from_path(&csv_path)
             .map_err(|e| format!("Failed to create hosts.csv: {}", e))?;
 
         wtr.write_record(&["hostname", "description"])
@@ -638,8 +695,9 @@ fn save_host(host: Host) -> Result<(), String> {
         hosts.push(host);
     }
 
+    let csv_path = get_hosts_csv_path()?;
     let mut wtr = csv::WriterBuilder::new()
-        .from_path("hosts.csv")
+        .from_path(&csv_path)
         .map_err(|e| format!("Failed to create CSV writer: {}", e))?;
 
     // Write header
@@ -665,11 +723,19 @@ fn save_host(host: Host) -> Result<(), String> {
     wtr.flush()
         .map_err(|e| format!("Failed to flush CSV writer: {}", e))?;
 
+    // Emit event to notify all windows that hosts list has been updated
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.emit("hosts-updated", ());
+    }
+    if let Some(hosts_window) = app_handle.get_webview_window("hosts") {
+        let _ = hosts_window.emit("hosts-updated", ());
+    }
+
     Ok(())
 }
 
 #[tauri::command]
-fn delete_host(hostname: String) -> Result<(), String> {
+fn delete_host(app_handle: tauri::AppHandle, hostname: String) -> Result<(), String> {
     debug_log(
         "INFO",
         "CSV_OPERATIONS",
@@ -682,8 +748,9 @@ fn delete_host(hostname: String) -> Result<(), String> {
         .filter(|h| h.hostname != hostname)
         .collect();
 
+    let csv_path = get_hosts_csv_path()?;
     let mut wtr = csv::WriterBuilder::new()
-        .from_path("hosts.csv")
+        .from_path(&csv_path)
         .map_err(|e| format!("Failed to create CSV writer: {}", e))?;
 
     // Write header
@@ -702,6 +769,14 @@ fn delete_host(hostname: String) -> Result<(), String> {
 
     wtr.flush()
         .map_err(|e| format!("Failed to flush CSV writer: {}", e))?;
+
+    // Emit event to notify all windows that hosts list has been updated
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.emit("hosts-updated", ());
+    }
+    if let Some(hosts_window) = app_handle.get_webview_window("hosts") {
+        let _ = hosts_window.emit("hosts-updated", ());
+    }
 
     Ok(())
 }
@@ -737,8 +812,9 @@ fn update_last_connected(hostname: &str) -> Result<(), String> {
     }
     
     // Write back to CSV
+    let csv_path = get_hosts_csv_path()?;
     let mut wtr = csv::WriterBuilder::new()
-        .from_path("hosts.csv")
+        .from_path(&csv_path)
         .map_err(|e| format!("Failed to create CSV writer: {}", e))?;
 
     wtr.write_record(&["hostname", "description", "last_connected"])
@@ -1370,7 +1446,7 @@ async fn scan_domain(
     }
 
     // Perform the LDAP scan
-    let result = scan_domain_ldap(domain, server).await;
+    let result = scan_domain_ldap(app_handle.clone(), domain, server).await;
 
     // Reset always on top after command completes
     let _ = hosts_window.set_always_on_top(false);
@@ -1378,7 +1454,7 @@ async fn scan_domain(
     result
 }
 
-async fn scan_domain_ldap(domain: String, server: String) -> Result<String, String> {
+async fn scan_domain_ldap(app_handle: tauri::AppHandle, domain: String, server: String) -> Result<String, String> {
     debug_log(
         "INFO",
         "LDAP_SCAN",
@@ -1656,7 +1732,8 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
     );
 
     // Write to CSV file
-    let mut wtr = match csv::WriterBuilder::new().from_path("hosts.csv") {
+    let csv_path = get_hosts_csv_path()?;
+    let mut wtr = match csv::WriterBuilder::new().from_path(&csv_path) {
         Ok(writer) => writer,
         Err(e) => {
             let error = format!("Failed to create CSV writer: {}", e);
@@ -1719,6 +1796,14 @@ async fn scan_domain_ldap(domain: String, server: String) -> Result<String, Stri
         ),
         Some(&format!("Total hosts written: {}", hosts.len())),
     );
+
+    // Emit event to notify all windows that hosts list has been updated
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.emit("hosts-updated", ());
+    }
+    if let Some(hosts_window) = app_handle.get_webview_window("hosts") {
+        let _ = hosts_window.emit("hosts-updated", ());
+    }
 
     Ok(format!(
         "Successfully found {} Windows Server(s).",
@@ -1903,15 +1988,25 @@ async fn get_host_credentials(hostname: String) -> Result<Option<StoredCredentia
 }
 
 #[tauri::command]
-async fn delete_all_hosts() -> Result<(), String> {
+async fn delete_all_hosts(app_handle: tauri::AppHandle) -> Result<(), String> {
     // Create empty file to clear all contents
-    std::fs::write("hosts.csv", "hostname,description\n")
+    let csv_path = get_hosts_csv_path()?;
+    std::fs::write(&csv_path, "hostname,description\n")
         .map_err(|e| format!("Failed to clear hosts file: {}", e))?;
+    
+    // Emit event to notify all windows that hosts list has been updated
+    if let Some(main_window) = app_handle.get_webview_window("main") {
+        let _ = main_window.emit("hosts-updated", ());
+    }
+    if let Some(hosts_window) = app_handle.get_webview_window("hosts") {
+        let _ = hosts_window.emit("hosts-updated", ());
+    }
+    
     Ok(())
 }
 
 #[tauri::command]
-async fn reset_application() -> Result<String, String> {
+async fn reset_application(app_handle: tauri::AppHandle) -> Result<String, String> {
     debug_log(
         "WARN",
         "RESET",
@@ -2082,7 +2177,7 @@ async fn reset_application() -> Result<String, String> {
     }
 
     // 4. Delete hosts.csv
-    match delete_all_hosts().await {
+    match delete_all_hosts(app_handle).await {
         Ok(_) => {
             report.push_str("\n✓ Cleared hosts.csv\n");
             debug_log("INFO", "RESET", "Cleared hosts.csv", None);
@@ -2597,6 +2692,10 @@ pub fn run() {
             if debug_enabled {
                 debug_log("INFO", "SYSTEM", "Tauri application setup started", None);
             }
+            
+            // Migrate hosts.csv from old location to AppData if needed
+            migrate_hosts_csv_if_needed();
+            
             // Initialize the LAST_HIDDEN_WINDOW
             if let Ok(mut last_hidden) = LAST_HIDDEN_WINDOW.lock() {
                 *last_hidden = "login".to_string();

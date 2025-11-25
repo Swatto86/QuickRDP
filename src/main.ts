@@ -196,6 +196,12 @@ async function initializeTheme() {
     document.documentElement.setAttribute('data-theme', newTheme);
     console.log('Theme changed to:', newTheme);
   });
+  
+  // Listen for hosts-updated events to refresh the hosts list
+  await listen('hosts-updated', async () => {
+    console.log('Hosts updated event received, refreshing list');
+    await loadAllHosts();
+  });
 }
 
 // Declare this once at the top of the file
