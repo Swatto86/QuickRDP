@@ -11,12 +11,32 @@ dist/
 dist-ssr/
 *.local
 
+# Vite cache and build artifacts
+.vite/
+.vite-inspect/
+vite.config.*.timestamp-*
+
 # Tauri / Rust
 src-tauri/target/
 src-tauri/Cargo.lock
+src-tauri/WixTools/
 
 # Generated files
 src-tauri/gen/
+
+# Tauri bundler and installer artifacts
+src-tauri/target/release/bundle/
+*.msi
+*.exe
+!src-tauri/icons/*.exe
+*.dmg
+*.deb
+*.rpm
+*.AppImage
+
+# WiX Toolset temporary files
+*.wixobj
+*.wixpdb
 
 # Environment variables
 .env
@@ -26,8 +46,8 @@ src-tauri/gen/
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 .idea/
-.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
@@ -41,6 +61,7 @@ src-tauri/gen/
 Thumbs.db
 .DS_Store
 desktop.ini
+ehthumbs.db
 
 # Logs
 *.log
@@ -71,6 +92,15 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+# Rust incremental compilation
+**/*.rs.bk
+incremental/
+
+# Debug output and crash dumps
+debug_output.txt
+*.pdb
+*.dmp
 
 # Lock files (optional - uncomment if you want to ignore them)
 # package-lock.json
