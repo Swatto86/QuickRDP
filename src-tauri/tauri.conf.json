@@ -83,7 +83,7 @@
         "minWidth": 500,
         "minHeight": 400,
         "resizable": true,
-        "title": "Error - QuickRDP",
+        "title": "Errors - QuickRDP",
         "url": "error.html",
         "transparent": false,
         "decorations": true,

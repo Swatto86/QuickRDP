@@ -59,6 +59,27 @@ fn show_error(
     Ok(())
 }
 
+#[tauri::command]
+async fn toggle_error_window(app_handle: tauri::AppHandle) -> Result<(), String> {
+    if let Some(error_window) = app_handle.get_webview_window("error") {
+        match error_window.is_visible() {
+            Ok(is_visible) => {
+                if is_visible {
+                    error_window.hide().map_err(|e| e.to_string())?;
+                } else {
+                    error_window.unminimize().map_err(|e| e.to_string())?;
+                    error_window.show().map_err(|e| e.to_string())?;
+                    error_window.set_focus().map_err(|e| e.to_string())?;
+                }
+                Ok(())
+            }
+            Err(e) => Err(format!("Failed to check window visibility: {}", e)),
+        }
+    } else {
+        Err("Error window not found".to_string())
+    }
+}
+
 use ldap3::{LdapConnAsync, Scope, SearchEntry};
 use serde::Deserialize;
 use std::ffi::OsStr;
@@ -2489,7 +2510,7 @@ fn set_theme(app_handle: tauri::AppHandle, theme: String) -> Result<(), String> 
         .map_err(|e| format!("Failed to write theme preference: {}", e))?;
 
     // Emit an event to all windows to update their theme
-    for window_label in ["login", "main", "hosts", "about"] {
+    for window_label in ["login", "main", "hosts", "about", "error"] {
         if let Some(window) = app_handle.get_webview_window(window_label) {
             let _ = window.emit("theme-changed", theme.clone());
         }
@@ -2977,12 +2998,14 @@ pub fn run() {
             // Note: We don't fail the app if hotkey registration fails
             use tauri_plugin_global_shortcut::GlobalShortcutExt;
             let app_handle_for_hotkey = app.app_handle().clone();
+            let app_handle_for_error_hotkey = app.app_handle().clone();
             let shortcut_manager = app.handle().global_shortcut();
             
             // Try to unregister first in case it was registered by a previous instance
             let _ = shortcut_manager.unregister("Ctrl+Shift+R");
+            let _ = shortcut_manager.unregister("Ctrl+Shift+E");
             
-            // Set up the handler BEFORE registering (per Tauri docs)
+            // Set up the handler for Ctrl+Shift+R BEFORE registering (per Tauri docs)
             match shortcut_manager.on_shortcut("Ctrl+Shift+R", move |_app_handle, _shortcut, _event| {
                 println!("Global hotkey Ctrl+Shift+R pressed!");
                 
@@ -3004,7 +3027,7 @@ pub fn run() {
                 }
             }) {
                 Ok(_) => {
-                    println!("Global hotkey handler registered");
+                    println!("Global hotkey handler for Ctrl+Shift+R registered");
                     
                     // Now register the actual shortcut
                     match shortcut_manager.register("Ctrl+Shift+R") {
@@ -3020,6 +3043,57 @@ pub fn run() {
                     eprintln!("The application will continue without the global hotkey.");
                 }
             }
+            
+            // Set up the handler for Ctrl+Shift+E to toggle error window
+            match shortcut_manager.on_shortcut("Ctrl+Shift+E", move |_app_handle, _shortcut, event| {
+                // Only trigger on key press (Down), not on release (Up) to prevent double-toggle
+                use tauri_plugin_global_shortcut::ShortcutState;
+                if event.state != ShortcutState::Pressed {
+                    return;
+                }
+                
+                println!("Global hotkey Ctrl+Shift+E pressed!");
+                
+                let error_window = app_handle_for_error_hotkey.get_webview_window("error");
+                
+                if let Some(window) = error_window {
+                    tauri::async_runtime::spawn(async move {
+                        match window.is_visible() {
+                            Ok(is_visible) => {
+                                if is_visible {
+                                    let _ = window.hide();
+                                    println!("Error window hidden via global hotkey");
+                                } else {
+                                    let _ = window.unminimize();
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                    println!("Error window shown via global hotkey");
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to check error window visibility: {:?}", e);
+                            }
+                        }
+                    });
+                }
+            }) {
+                Ok(_) => {
+                    println!("Global hotkey handler for Ctrl+Shift+E registered");
+                    
+                    // Now register the actual shortcut
+                    match shortcut_manager.register("Ctrl+Shift+E") {
+                        Ok(_) => println!("Global hotkey Ctrl+Shift+E activated successfully"),
+                        Err(e) => {
+                            eprintln!("Warning: Failed to register global hotkey Ctrl+Shift+E: {:?}", e);
+                            eprintln!("The hotkey may be in use by another application.");
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Warning: Failed to set up Ctrl+Shift+E hotkey handler: {:?}", e);
+                    eprintln!("The application will continue without this global hotkey.");
+                }
+            }
 
             Ok(())
         })
@@ -3027,6 +3101,7 @@ pub fn run() {
             quit_app,
             show_about,
             show_error,
+            toggle_error_window,
             save_credentials,
             get_stored_credentials,
             delete_credentials,
