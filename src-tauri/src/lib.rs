@@ -3006,23 +3006,41 @@ pub fn run() {
             let _ = shortcut_manager.unregister("Ctrl+Shift+E");
             
             // Set up the handler for Ctrl+Shift+R BEFORE registering (per Tauri docs)
-            match shortcut_manager.on_shortcut("Ctrl+Shift+R", move |_app_handle, _shortcut, _event| {
+            match shortcut_manager.on_shortcut("Ctrl+Shift+R", move |_app_handle, _shortcut, event| {
+                // Only trigger on key press (Down), not on release (Up) to prevent double-toggle
+                use tauri_plugin_global_shortcut::ShortcutState;
+                if event.state != ShortcutState::Pressed {
+                    return;
+                }
+                
                 println!("Global hotkey Ctrl+Shift+R pressed!");
                 
                 let main_window = app_handle_for_hotkey.get_webview_window("main");
                 
                 if let Some(window) = main_window {
                     tauri::async_runtime::spawn(async move {
-                        // Update last hidden window to main so tray shows correct window
-                        if let Ok(mut last_hidden) = LAST_HIDDEN_WINDOW.lock() {
-                            *last_hidden = "main".to_string();
+                        match window.is_visible() {
+                            Ok(is_visible) => {
+                                if is_visible {
+                                    let _ = window.hide();
+                                    
+                                    // Update last hidden window to main so tray shows correct window
+                                    if let Ok(mut last_hidden) = LAST_HIDDEN_WINDOW.lock() {
+                                        *last_hidden = "main".to_string();
+                                    }
+                                    
+                                    println!("Main window hidden via global hotkey");
+                                } else {
+                                    let _ = window.unminimize();
+                                    let _ = window.show();
+                                    let _ = window.set_focus();
+                                    println!("Main window shown via global hotkey");
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to check main window visibility: {:?}", e);
+                            }
                         }
-                        
-                        // Show and focus the window
-                        let _ = window.unminimize();
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                        println!("Main window shown via global hotkey");
                     });
                 }
             }) {
